@@ -1,5 +1,19 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { TIME_SLOTS, formatDateTH, timeDiff } from '../../utils/helpers';
+
+const MAX_FILES = 5;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+
+function fileIcon(type) {
+  if (type.startsWith('image/')) return '🖼️';
+  if (type.includes('pdf')) return '📄';
+  if (type.includes('word') || type.includes('document')) return '📝';
+  if (type.includes('sheet') || type.includes('excel')) return '📊';
+  return '📎';
+}
 
 export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, bookings = [], onBook, onClose }) {
   const [form, setForm] = useState({
@@ -13,6 +27,8 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [files, setFiles] = useState([]); // { file, preview, name, size, type }
+  const fileRef = useRef(null);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -42,6 +58,36 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
     return opts;
   }, [form.startTime, bookedSlots]);
 
+  // ─── File handling ────────────────────────────────────────────────────────
+  const handleFiles = (e) => {
+    const incoming = Array.from(e.target.files || []);
+    const valid = incoming.filter(f => {
+      if (!ALLOWED_TYPES.includes(f.type)) return false;
+      if (f.size > MAX_FILE_SIZE) return false;
+      return true;
+    });
+    const remain = MAX_FILES - files.length;
+    const toAdd = valid.slice(0, remain).map(f => ({
+      file: f,
+      name: f.name,
+      size: f.size,
+      type: f.type,
+      preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null
+    }));
+    setFiles(prev => [...prev, ...toAdd]);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const removeFile = (idx) => {
+    setFiles(prev => {
+      const next = [...prev];
+      if (next[idx].preview) URL.revokeObjectURL(next[idx].preview);
+      next.splice(idx, 1);
+      return next;
+    });
+  };
+
+  // ─── Validation ───────────────────────────────────────────────────────────
   const validate1 = () => {
     const e = {};
     if (!form.name.trim()) e.name = 'กรุณากรอกชื่อ-นามสกุล';
@@ -67,8 +113,16 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
   };
 
   const submit = async () => {
+    if (!validate2()) return;
     setLoading(true);
     try {
+      // Convert files to base64 for transport
+      const attachments = await Promise.all(files.map(f => new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: f.name, type: f.type, size: f.size, data: reader.result });
+        reader.readAsDataURL(f.file);
+      })));
+
       await onBook({
         name: form.name.trim(),
         phone: form.phone.trim(),
@@ -76,7 +130,8 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
         date: selectedDate,
         startTime: form.startTime,
         endTime: form.endTime,
-        purpose: form.purpose.trim()
+        purpose: form.purpose.trim(),
+        attachments: attachments.length > 0 ? attachments : undefined
       });
     } catch {
       // handled in parent
@@ -87,6 +142,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
 
   const roomObj = rooms.find(r => r.name === form.room);
   const dur = form.startTime && form.endTime ? timeDiff(form.startTime, form.endTime) : 0;
+  const canSubmit = form.room && form.startTime && form.endTime && dur > 0 && dur <= 240;
 
   return (
     <div
@@ -94,7 +150,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-[560px] max-h-[92vh] overflow-y-auto animate-slide-up"
+        className="bg-white rounded-3xl w-full max-w-[580px] max-h-[92vh] overflow-y-auto animate-slide-up"
         style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.25)' }}
       >
         {/* Modal Header */}
@@ -103,7 +159,9 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
             <div className="font-bold text-lg text-gray-800" style={{ fontFamily: 'Prompt, sans-serif' }}>
               📝 จองห้องประชุม
             </div>
-            <div className="text-xs text-gray-400 mt-0.5">{formatDateTH(selectedDate)}</div>
+            <div className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: 'Sarabun, sans-serif' }}>
+              {formatDateTH(selectedDate)} · การจองมีผลทันที
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -118,8 +176,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
           <div className="flex items-center gap-2">
             {[
               { n: 1, label: 'ข้อมูลผู้จอง' },
-              { n: 2, label: 'ห้องและเวลา' },
-              { n: 3, label: 'ยืนยัน' }
+              { n: 2, label: 'ห้อง เวลา และไฟล์แนบ' }
             ].map((s, i) => (
               <div key={s.n} className="flex items-center gap-2 flex-1">
                 <div className={`flex items-center gap-2 text-xs font-medium ${step >= s.n ? (step > s.n ? 'text-green-600' : 'text-teal-600') : 'text-gray-400'}`}>
@@ -129,7 +186,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
                   </div>
                   <span className="hidden sm:inline whitespace-nowrap" style={{ fontFamily: 'Sarabun, sans-serif' }}>{s.label}</span>
                 </div>
-                {i < 2 && <div className={`flex-1 h-0.5 ${step > s.n ? 'bg-green-400' : 'bg-gray-200'}`}></div>}
+                {i < 1 && <div className={`flex-1 h-0.5 ${step > s.n ? 'bg-green-400' : 'bg-gray-200'}`}></div>}
               </div>
             ))}
           </div>
@@ -185,7 +242,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
             </div>
           )}
 
-          {/* Step 2: ห้องและเวลา */}
+          {/* Step 2: ห้อง เวลา ไฟล์แนบ */}
           {step === 2 && (
             <div className="animate-fade-in space-y-4">
               <div>
@@ -211,7 +268,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
               {/* Booked slots info */}
               {form.room && bookedSlots.size > 0 && (
                 <div className="p-3 rounded-xl text-xs text-amber-700 flex gap-2 items-start"
-                  style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
+                  style={{ background: '#fef3c7', border: '1px solid #fde68a', fontFamily: 'Sarabun, sans-serif' }}>
                   <span>⚠️</span>
                   <span>ห้องนี้มีการจองบางช่วงเวลาแล้ว ช่วงเวลาที่แสดงสีเทาไม่สามารถเลือกได้</span>
                 </div>
@@ -245,7 +302,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
                     เวลาสิ้นสุด * (สูงสุด 4 ชั่วโมง)
                   </label>
                   {endOptions.length === 0 ? (
-                    <p className="text-xs text-red-500">ช่วงเวลาถัดไปถูกจองแล้ว กรุณาเลือกเวลาเริ่มอื่น</p>
+                    <p className="text-xs text-red-500" style={{ fontFamily: 'Sarabun, sans-serif' }}>ช่วงเวลาถัดไปถูกจองแล้ว กรุณาเลือกเวลาเริ่มอื่น</p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {endOptions.map(t => {
@@ -266,39 +323,73 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
                   {errors.endTime && <div className="text-xs text-red-500 mt-1">{errors.endTime}</div>}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Step 3: ยืนยัน */}
-          {step === 3 && (
-            <div className="animate-fade-in">
-              <div className="rounded-2xl p-5 border border-green-200" style={{ background: '#f0fdf9' }}>
-                <div className="font-bold text-sm mb-4 text-teal-700" style={{ fontFamily: 'Prompt, sans-serif' }}>
-                  📋 สรุปการจอง
-                </div>
-                {[
-                  ['👤 ผู้จอง', form.name],
-                  ['📞 เบอร์โทร', form.phone],
-                  ['🏢 ห้อง', roomObj ? `${roomObj.icon} ${form.room}` : form.room],
-                  ['📅 วันที่', formatDateTH(selectedDate)],
-                  ['⏰ เวลา', `${form.startTime} – ${form.endTime} น.`],
-                  ['⏱️ ระยะเวลา', dur > 0 ? `${dur / 60} ชั่วโมง` : '-'],
-                  ['📝 วัตถุประสงค์', form.purpose]
-                ].map(([k, v]) => (
-                  <div key={k} className="flex gap-3 mb-2.5 text-sm">
-                    <span className="min-w-[130px] text-gray-500 font-semibold flex-shrink-0"
-                      style={{ fontFamily: 'Sarabun, sans-serif' }}>{k}</span>
-                    <span className="text-gray-800" style={{ fontFamily: 'Sarabun, sans-serif' }}>{v}</span>
+              {/* File attachments */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider"
+                  style={{ fontFamily: 'Sarabun, sans-serif' }}>
+                  📎 แนบไฟล์ประกอบ (ไม่บังคับ · สูงสุด {MAX_FILES} ไฟล์)
+                </label>
+                <div
+                  className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center cursor-pointer transition-all hover:border-teal-300 hover:bg-teal-50/30"
+                  onClick={() => files.length < MAX_FILES && fileRef.current?.click()}
+                >
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                    className="hidden"
+                    onChange={handleFiles}
+                  />
+                  <div className="text-2xl mb-1">📂</div>
+                  <div className="text-xs text-gray-500" style={{ fontFamily: 'Sarabun, sans-serif' }}>
+                    คลิกเพื่อเลือกไฟล์ · รูปภาพ, PDF, Word, Excel (สูงสุด 5MB/ไฟล์)
                   </div>
-                ))}
+                </div>
+
+                {files.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {files.map((f, idx) => (
+                      <div key={idx} className="relative group">
+                        {f.preview ? (
+                          <img src={f.preview} alt={f.name}
+                            className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg border border-gray-200 flex flex-col items-center justify-center bg-gray-50">
+                            <span className="text-lg">{fileIcon(f.type)}</span>
+                            <span className="text-[8px] text-gray-400 mt-0.5 px-1 truncate max-w-full">{f.name.split('.').pop()}</span>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => removeFile(idx)}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ lineHeight: 1 }}
+                        >✕</button>
+                        <div className="text-[8px] text-gray-400 text-center mt-0.5 truncate max-w-[64px]">{f.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="mt-4 p-3 rounded-xl text-xs text-teal-700 flex gap-2 items-start"
-                style={{ background: '#ccfbf1' }}>
-                <span>✅</span>
-                <span style={{ fontFamily: 'Sarabun, sans-serif' }}>
-                  ระบบจะบันทึกข้อมูลลง Google Sheets ทันที กรุณาตรวจสอบข้อมูลก่อนยืนยัน
-                </span>
-              </div>
+
+              {/* Quick summary before submit */}
+              {canSubmit && (
+                <div className="rounded-xl p-4 border border-teal-200" style={{ background: '#f0fdf9' }}>
+                  <div className="text-xs font-bold text-teal-700 mb-2" style={{ fontFamily: 'Prompt, sans-serif' }}>
+                    ⚡ สรุปการจอง — กดยืนยันเพื่อจองทันที
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs" style={{ fontFamily: 'Sarabun, sans-serif' }}>
+                    <span className="text-gray-500">👤 {form.name}</span>
+                    <span className="text-gray-500">📞 {form.phone}</span>
+                    <span className="text-gray-700 font-semibold">{roomObj?.icon} {form.room}</span>
+                    <span className="text-gray-700 font-semibold">⏰ {form.startTime}–{form.endTime} ({dur / 60}ชม.)</span>
+                  </div>
+                  {files.length > 0 && (
+                    <div className="text-[10px] text-teal-600 mt-1">📎 แนบ {files.length} ไฟล์</div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -307,21 +398,18 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
         <div className="px-6 py-5 flex gap-3 justify-end border-t border-gray-100">
           <button className="btn-secondary" onClick={onClose}>ยกเลิก</button>
           {step > 1 && (
-            <button className="btn-secondary" onClick={() => setStep(s => s - 1)}>← ย้อนกลับ</button>
+            <button className="btn-secondary" onClick={() => setStep(1)}>← ย้อนกลับ</button>
           )}
-          {step < 3 && (
-            <button className="btn-primary" onClick={() => {
-              if (step === 1 && validate1()) setStep(2);
-              else if (step === 2 && validate2()) setStep(3);
-            }}>
+          {step === 1 && (
+            <button className="btn-primary" onClick={() => { if (validate1()) setStep(2); }}>
               ถัดไป →
             </button>
           )}
-          {step === 3 && (
-            <button className="btn-primary btn-lg" onClick={submit} disabled={loading}>
+          {step === 2 && (
+            <button className="btn-primary btn-lg" onClick={submit} disabled={loading || !canSubmit}>
               {loading
                 ? <><span className="loader"></span>&nbsp;กำลังจอง...</>
-                : '✅ ยืนยันการจอง'}
+                : '⚡ จองทันที'}
             </button>
           )}
         </div>
