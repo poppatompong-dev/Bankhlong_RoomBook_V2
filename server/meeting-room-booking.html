@@ -1,0 +1,2118 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Meeting Room Booking – ระบบจองห้องประชุมอัจฉริยะ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-50: #f0faf4;
+    --green-100: #dcf5e7;
+    --green-200: #bbebcf;
+    --green-300: #86d9a8;
+    --green-400: #4ec07a;
+    --green-500: #28a55a;
+    --green-600: #1c8646;
+    --teal-400: #2dd4bf;
+    --teal-500: #14b8a6;
+    --teal-600: #0d9488;
+    --teal-700: #0f766e;
+    --white: #ffffff;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --red-400: #f87171;
+    --red-500: #ef4444;
+    --amber-400: #fbbf24;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+    --shadow-teal: 0 4px 15px rgba(20,184,166,0.3);
+    --radius: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: linear-gradient(135deg, var(--green-50) 0%, #f0fdf9 50%, var(--white) 100%);
+    min-height: 100vh;
+    color: var(--gray-700);
+  }
+
+  #root { min-height: 100vh; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--gray-100); }
+  ::-webkit-scrollbar-thumb { background: var(--teal-400); border-radius: 3px; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #0d9488 0%, #14b8a6 50%, #2dd4bf 100%);
+    color: white;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(13,148,136,0.4);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-logo {
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .header-title {
+    font-family: 'Prompt', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .header-sub {
+    font-size: 12px;
+    opacity: 0.85;
+    font-weight: 400;
+  }
+  .header-nav {
+    display: flex;
+    gap: 4px;
+  }
+  .nav-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: white;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.15); }
+  .nav-btn.active { background: rgba(255,255,255,0.25); }
+
+  /* Layout */
+  .main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* Cards */
+  .card {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--green-100);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title {
+    font-family: 'Prompt', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-body { padding: 24px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--teal-500), var(--teal-600));
+    color: white;
+    box-shadow: var(--shadow-teal);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(20,184,166,0.4); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-secondary {
+    background: var(--gray-100);
+    color: var(--gray-700);
+  }
+  .btn-secondary:hover { background: var(--gray-200); }
+  .btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+  }
+  .btn-danger:hover { transform: translateY(-1px); }
+  .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
+  .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 12px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+  /* Form */
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-control {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 10px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px;
+    color: var(--gray-700);
+    background: white;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .form-control:focus {
+    border-color: var(--teal-400);
+    box-shadow: 0 0 0 3px rgba(45,212,191,0.15);
+  }
+  select.form-control { cursor: pointer; }
+
+  /* Calendar */
+  .calendar-wrap { user-select: none; }
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .cal-month {
+    font-family: 'Prompt', sans-serif;
+    font-size: 16px; font-weight: 600;
+    color: var(--gray-800);
+  }
+  .cal-nav {
+    width: 32px; height: 32px;
+    border-radius: 8px; border: 1.5px solid var(--gray-200);
+    background: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--gray-600);
+    transition: all 0.2s;
+  }
+  .cal-nav:hover { border-color: var(--teal-400); color: var(--teal-500); background: var(--green-50); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day-label {
+    text-align: center; font-size: 11px; font-weight: 700;
+    color: var(--gray-400); padding: 4px 0; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    color: var(--gray-700);
+    border: 1.5px solid transparent;
+  }
+  .cal-day:hover:not(.cal-day-empty):not(.cal-day-past) {
+    background: var(--green-100);
+    border-color: var(--green-300);
+  }
+  .cal-day.cal-day-today {
+    background: var(--green-100);
+    border-color: var(--green-300);
+    color: var(--green-600);
+    font-weight: 700;
+  }
+  .cal-day.cal-day-selected {
+    background: linear-gradient(135deg, var(--teal-500), var(--teal-600));
+    color: white !important;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(20,184,166,0.4);
+  }
+  .cal-day.cal-day-past { color: var(--gray-300); cursor: not-allowed; }
+  .cal-day.cal-day-empty { cursor: default; }
+  .cal-day.cal-day-has-booking { position: relative; }
+  .cal-day.cal-day-has-booking::after {
+    content: '';
+    position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--teal-400);
+  }
+
+  /* Rooms Grid */
+  .rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .room-card {
+    border-radius: var(--radius);
+    border: 2px solid var(--gray-100);
+    background: white;
+    padding: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .room-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--teal-400), var(--green-400));
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .room-card:hover { border-color: var(--teal-300); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .room-card:hover::before { opacity: 1; }
+  .room-card.room-available { border-color: var(--green-200); }
+  .room-card.room-booked { border-color: var(--red-400); opacity: 0.7; cursor: not-allowed; }
+  .room-card.room-booked:hover { transform: none; }
+  .room-card.room-selected { border-color: var(--teal-500); box-shadow: 0 0 0 3px rgba(20,184,166,0.2); }
+  .room-card.room-selected::before { opacity: 1; }
+  .room-name {
+    font-family: 'Prompt', sans-serif;
+    font-size: 14px; font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .room-capacity {
+    font-size: 12px; color: var(--gray-500);
+    display: flex; align-items: center; gap: 4px;
+    margin-bottom: 12px;
+  }
+  .room-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  .status-available { background: var(--green-100); color: var(--green-600); }
+  .status-booked { background: #fee2e2; color: var(--red-500); }
+
+  /* Badge */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-success { background: var(--green-100); color: var(--green-600); }
+  .badge-danger { background: #fee2e2; color: var(--red-500); }
+  .badge-warning { background: #fef3c7; color: #d97706; }
+  .badge-info { background: #dbeafe; color: #2563eb; }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 20px;
+    border: 1px solid var(--green-100);
+    box-shadow: var(--shadow-sm);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .stat-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .stat-icon-green { background: var(--green-100); }
+  .stat-icon-teal { background: #ccfbf1; }
+  .stat-icon-blue { background: #dbeafe; }
+  .stat-icon-amber { background: #fef3c7; }
+  .stat-value {
+    font-family: 'Prompt', sans-serif;
+    font-size: 28px; font-weight: 700;
+    color: var(--gray-800); line-height: 1;
+  }
+  .stat-label { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 12px 16px;
+    font-size: 11px; font-weight: 700;
+    color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+  }
+  td {
+    padding: 14px 16px;
+    font-size: 13px; color: var(--gray-700);
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+  }
+  tr:hover td { background: var(--green-50); }
+  tr:last-child td { border-bottom: none; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+    width: 100%; max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+  .modal-header {
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: white; z-index: 1;
+  }
+  .modal-title {
+    font-family: 'Prompt', sans-serif;
+    font-size: 18px; font-weight: 600;
+    color: var(--gray-800);
+  }
+  .modal-close {
+    width: 32px; height: 32px;
+    border-radius: 8px; border: none;
+    background: var(--gray-100); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--gray-500);
+    transition: all 0.2s;
+  }
+  .modal-close:hover { background: var(--gray-200); color: var(--gray-700); }
+  .modal-body { padding: 24px 28px; }
+  .modal-footer {
+    padding: 16px 28px 24px;
+    display: flex; gap: 12px; justify-content: flex-end;
+  }
+
+  /* Toast */
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px;
+    z-index: 300; display: flex; flex-direction: column; gap: 8px;
+  }
+  .toast {
+    padding: 14px 20px;
+    border-radius: 12px;
+    color: white;
+    font-size: 14px; font-weight: 500;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    display: flex; align-items: center; gap: 10px;
+    animation: slideLeft 0.3s ease;
+    max-width: 360px;
+  }
+  .toast-success { background: linear-gradient(135deg, var(--green-500), var(--teal-500)); }
+  .toast-error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+  .toast-info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+  /* Timeline */
+  .timeline {
+    display: flex; gap: 2px;
+    height: 32px; border-radius: 8px; overflow: hidden;
+    background: var(--gray-100);
+  }
+  .timeline-slot {
+    flex: 1; position: relative;
+    transition: background 0.15s;
+  }
+  .timeline-slot.booked { background: #fecaca; }
+  .timeline-slot.selected { background: rgba(45,212,191,0.5); }
+
+  /* Time pills */
+  .time-grid {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .time-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid var(--gray-200);
+    background: white;
+    color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .time-pill:hover { border-color: var(--teal-400); color: var(--teal-500); }
+  .time-pill.selected { background: var(--teal-500); color: white; border-color: var(--teal-500); }
+  .time-pill.disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Section tabs */
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--gray-100);
+    border-radius: 12px; padding: 4px;
+    margin-bottom: 24px;
+  }
+  .tab {
+    flex: 1; padding: 10px 16px;
+    border-radius: 9px; border: none;
+    background: transparent; cursor: pointer;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px; font-weight: 500;
+    color: var(--gray-500);
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .tab.active {
+    background: white;
+    color: var(--teal-600);
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+  }
+  .tab:hover:not(.active) { color: var(--gray-700); }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+  .flex-row { display: flex; gap: 16px; }
+  .flex-col { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Section divider */
+  .section-title {
+    font-family: 'Prompt', sans-serif;
+    font-size: 20px; font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 6px;
+  }
+  .section-sub { font-size: 14px; color: var(--gray-400); margin-bottom: 20px; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 48px 24px;
+    color: var(--gray-400);
+  }
+  .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state-text { font-size: 16px; font-weight: 500; margin-bottom: 4px; color: var(--gray-500); }
+  .empty-state-sub { font-size: 13px; }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 8px; border-radius: 4px;
+    background: var(--gray-100);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--teal-400), var(--green-400));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  /* Integration status */
+  .integration-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px;
+    border-radius: 10px;
+    border: 1.5px solid var(--gray-200);
+    margin-bottom: 10px;
+    background: white;
+  }
+  .integration-info { display: flex; align-items: center; gap: 12px; }
+  .integration-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .int-google { background: #fce4ec; }
+  .int-line { background: #e8f5e9; }
+
+  /* Toggle switch */
+  .toggle {
+    position: relative; width: 44px; height: 24px;
+    display: inline-block;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0;
+    background: var(--gray-300); border-radius: 12px;
+    cursor: pointer; transition: 0.3s;
+  }
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    left: 3px; top: 3px;
+    background: white; border-radius: 50%;
+    transition: 0.3s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle input:checked + .toggle-slider { background: var(--teal-500); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+  /* Chips */
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    background: var(--gray-100); color: var(--gray-600);
+  }
+
+  /* Animated loader */
+  .loader {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+
+  /* Step indicator */
+  .steps {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 28px;
+  }
+  .step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 500; color: var(--gray-400);
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    background: var(--gray-200); color: var(--gray-500);
+    flex-shrink: 0;
+  }
+  .step.active .step-num { background: var(--teal-500); color: white; }
+  .step.active { color: var(--teal-600); }
+  .step.done .step-num { background: var(--green-400); color: white; }
+  .step-line { flex: 1; height: 2px; background: var(--gray-200); min-width: 20px; }
+  .step.done + .step-line { background: var(--green-400); }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideLeft { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .fade-in { animation: fadeIn 0.4s ease; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .main { padding: 16px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .header-inner { padding: 12px 16px; }
+    .header-nav { display: none; }
+    .tabs { flex-wrap: wrap; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .rooms-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Watermark style note */
+  .design-credit {
+    text-align: center; padding: 16px;
+    font-size: 11px; color: var(--gray-400);
+    letter-spacing: 0.5px;
+  }
+
+  .dot-live {
+    width: 8px; height: 8px;
+    background: var(--green-400); border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+const {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef
+} = React;
+
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const ROOMS = [{
+  id: 'r1',
+  name: 'ห้องมณีจันทรา',
+  capacity: 20,
+  icon: '💎',
+  floor: '1'
+}, {
+  id: 'r2',
+  name: 'ห้องพระพุทธสัมฤทธิ์โกสีย์',
+  capacity: 20,
+  icon: '🏛️',
+  floor: '1'
+}, {
+  id: 'r3',
+  name: 'ห้องชัยบุรี',
+  capacity: 20,
+  icon: '⚔️',
+  floor: '2'
+}, {
+  id: 'r4',
+  name: 'ห้องประชุมสารสนเทศ',
+  capacity: 10,
+  icon: '💻',
+  floor: '2'
+}, {
+  id: 'r5',
+  name: 'อาคารเอนกประสงค์',
+  capacity: 200,
+  icon: '🏟️',
+  floor: 'G'
+}];
+const TIME_SLOTS = ['07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'];
+const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+const THAI_DAYS = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+function formatDateTH(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+function formatTimeTH(t) {
+  return t;
+}
+function isOverlap(a, b) {
+  return a.roomId === b.roomId && a.startTime < b.endTime && a.endTime > b.startTime;
+}
+function timeDiff(s, e) {
+  const [sh, sm] = s.split(':').map(Number);
+  const [eh, em] = e.split(':').map(Number);
+  return eh * 60 + em - (sh * 60 + sm);
+}
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// ─── INITIAL DEMO DATA ───────────────────────────────────────────────────────
+
+const DEMO = [{
+  id: genId(),
+  name: 'สมชาย ใจดี',
+  phone: '081-234-5678',
+  roomId: 'r1',
+  date: today(),
+  startTime: '09:00',
+  endTime: '11:00',
+  purpose: 'ประชุมแผนงาน Q1',
+  status: 'confirmed',
+  createdAt: new Date().toISOString()
+}, {
+  id: genId(),
+  name: 'นิตยา แสงทอง',
+  phone: '082-345-6789',
+  roomId: 'r2',
+  date: today(),
+  startTime: '13:00',
+  endTime: '15:00',
+  purpose: 'อบรมพนักงานใหม่',
+  status: 'confirmed',
+  createdAt: new Date().toISOString()
+}, {
+  id: genId(),
+  name: 'วิชัย มั่นคง',
+  phone: '083-456-7890',
+  roomId: 'r3',
+  date: today(),
+  startTime: '10:00',
+  endTime: '12:00',
+  purpose: 'ประชุมงบประมาณ',
+  status: 'confirmed',
+  createdAt: new Date().toISOString()
+}];
+
+// ─── TOAST HOOK ──────────────────────────────────────────────────────────────
+
+function useToast() {
+  const [toasts, setToasts] = useState([]);
+  const show = useCallback((msg, type = 'success') => {
+    const id = genId();
+    setToasts(p => [...p, {
+      id,
+      msg,
+      type
+    }]);
+    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3500);
+  }, []);
+  return {
+    toasts,
+    show
+  };
+}
+
+// ─── CALENDAR ───────────────────────────────────────────────────────────────
+
+function Calendar({
+  selected,
+  onSelect,
+  bookings
+}) {
+  const [view, setView] = useState(() => {
+    const d = new Date();
+    return {
+      year: d.getFullYear(),
+      month: d.getMonth()
+    };
+  });
+  const {
+    year,
+    month
+  } = view;
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = today();
+  const datesWithBookings = useMemo(() => {
+    const s = new Set();
+    bookings.filter(b => b.status === 'confirmed').forEach(b => s.add(b.date));
+    return s;
+  }, [bookings]);
+  const prev = () => setView(v => {
+    const m = v.month === 0 ? 11 : v.month - 1;
+    const y = v.month === 0 ? v.year - 1 : v.year;
+    return {
+      year: y,
+      month: m
+    };
+  });
+  const next = () => setView(v => {
+    const m = v.month === 11 ? 0 : v.month + 1;
+    const y = v.month === 11 ? v.year + 1 : v.year;
+    return {
+      year: y,
+      month: m
+    };
+  });
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "calendar-wrap"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cal-header"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cal-nav",
+    onClick: prev
+  }, "\u2039"), /*#__PURE__*/React.createElement("span", {
+    className: "cal-month"
+  }, THAI_MONTHS[month], " ", year + 543), /*#__PURE__*/React.createElement("button", {
+    className: "cal-nav",
+    onClick: next
+  }, "\u203A")), /*#__PURE__*/React.createElement("div", {
+    className: "cal-grid"
+  }, THAI_DAYS.map(d => /*#__PURE__*/React.createElement("div", {
+    key: d,
+    className: "cal-day-label"
+  }, d)), cells.map((d, i) => {
+    if (!d) return /*#__PURE__*/React.createElement("div", {
+      key: `e${i}`,
+      className: "cal-day cal-day-empty"
+    });
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isPast = dateStr < todayStr;
+    const isToday = dateStr === todayStr;
+    const isSel = dateStr === selected;
+    const hasBook = datesWithBookings.has(dateStr);
+    let cls = 'cal-day';
+    if (isPast) cls += ' cal-day-past';else if (isSel) cls += ' cal-day-selected';else if (isToday) cls += ' cal-day-today';
+    if (hasBook && !isSel) cls += ' cal-day-has-booking';
+    return /*#__PURE__*/React.createElement("div", {
+      key: d,
+      className: cls,
+      onClick: () => !isPast && onSelect(dateStr)
+    }, d);
+  })));
+}
+
+// ─── ROOM CARD ───────────────────────────────────────────────────────────────
+
+function RoomCard({
+  room,
+  isBooked,
+  isSelected,
+  onClick,
+  bookingsToday
+}) {
+  const bookingsForRoom = bookingsToday.filter(b => b.roomId === room.id && b.status === 'confirmed');
+  return /*#__PURE__*/React.createElement("div", {
+    className: `room-card ${isBooked ? 'room-booked' : 'room-available'} ${isSelected ? 'room-selected' : ''}`,
+    onClick: () => !isBooked && onClick(room)
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      marginBottom: '10px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '24px'
+    }
+  }, room.icon), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "room-name"
+  }, room.name), /*#__PURE__*/React.createElement("div", {
+    className: "room-capacity"
+  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDC65"), " ", room.capacity, " \u0E17\u0E35\u0E48\u0E19\u0E31\u0E48\u0E07 \xB7 \u0E0A\u0E31\u0E49\u0E19 ", room.floor))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `room-status ${isBooked ? 'status-booked' : 'status-available'}`
+  }, isBooked ? '❌ ถูกจอง' : '✅ ว่าง'), bookingsForRoom.length > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "chip"
+  }, bookingsForRoom.length, " \u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07")), bookingsForRoom.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: '10px',
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '4px'
+    }
+  }, bookingsForRoom.slice(0, 3).map(b => /*#__PURE__*/React.createElement("span", {
+    key: b.id,
+    style: {
+      fontSize: '11px',
+      padding: '2px 8px',
+      background: '#fef9c3',
+      color: '#854d0e',
+      borderRadius: '4px'
+    }
+  }, b.startTime, "\u2013", b.endTime))));
+}
+
+// ─── BOOKING FORM ─────────────────────────────────────────────────────────────
+
+function BookingForm({
+  bookings,
+  selectedDate,
+  selectedRoom,
+  onBook,
+  onClose
+}) {
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    purpose: '',
+    startTime: '',
+    endTime: '',
+    roomId: selectedRoom?.id || ''
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1);
+  const set = (k, v) => setForm(p => ({
+    ...p,
+    [k]: v
+  }));
+  const roomBookings = useMemo(() => bookings.filter(b => b.date === selectedDate && b.roomId === form.roomId && b.status === 'confirmed'), [bookings, selectedDate, form.roomId]);
+  const bookedSlots = useMemo(() => {
+    const slots = new Set();
+    roomBookings.forEach(b => {
+      TIME_SLOTS.forEach(t => {
+        if (t >= b.startTime && t < b.endTime) slots.add(t);
+      });
+    });
+    return slots;
+  }, [roomBookings]);
+  const endOptions = useMemo(() => {
+    if (!form.startTime) return [];
+    const idx = TIME_SLOTS.indexOf(form.startTime);
+    const opts = [];
+    for (let i = idx + 1; i <= Math.min(idx + 8, TIME_SLOTS.length - 1); i++) {
+      const t = TIME_SLOTS[i];
+      const blocked = TIME_SLOTS.slice(idx + 1, i).some(s => bookedSlots.has(s));
+      if (!blocked) opts.push(t);else break;
+    }
+    return opts;
+  }, [form.startTime, bookedSlots]);
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'กรุณากรอกชื่อ';
+    if (!form.phone.trim()) e.phone = 'กรุณากรอกเบอร์โทร';
+    if (!form.purpose.trim()) e.purpose = 'กรุณากรอกวัตถุประสงค์';
+    if (!form.roomId) e.roomId = 'กรุณาเลือกห้อง';
+    if (!form.startTime) e.startTime = 'กรุณาเลือกเวลาเริ่ม';
+    if (!form.endTime) e.endTime = 'กรุณาเลือกเวลาสิ้นสุด';
+    if (form.startTime && form.endTime) {
+      const dur = timeDiff(form.startTime, form.endTime);
+      if (dur > 240) e.endTime = 'สูงสุด 4 ชั่วโมง';
+      if (dur <= 0) e.endTime = 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม';
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+  const submit = async () => {
+    if (!validate()) return;
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 800));
+    onBook({
+      ...form,
+      date: selectedDate
+    });
+    setLoading(false);
+  };
+  const roomName = ROOMS.find(r => r.id === form.roomId)?.name;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "modal-overlay",
+    onClick: e => e.target === e.currentTarget && onClose()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-header"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "modal-title"
+  }, "\uD83D\uDCDD \u0E08\u0E2D\u0E07\u0E2B\u0E49\u0E2D\u0E07\u0E1B\u0E23\u0E30\u0E0A\u0E38\u0E21"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--gray-400)',
+      marginTop: '2px'
+    }
+  }, formatDateTH(selectedDate))), /*#__PURE__*/React.createElement("button", {
+    className: "modal-close",
+    onClick: onClose
+  }, "\u2715")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '16px 28px 0'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "steps"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `step ${step >= 1 ? step > 1 ? 'done' : 'active' : ''}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "step-num"
+  }, step > 1 ? '✓' : '1'), /*#__PURE__*/React.createElement("span", null, "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E08\u0E2D\u0E07")), /*#__PURE__*/React.createElement("div", {
+    className: "step-line"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: `step ${step >= 2 ? step > 2 ? 'done' : 'active' : ''}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "step-num"
+  }, step > 2 ? '✓' : '2'), /*#__PURE__*/React.createElement("span", null, "\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E2B\u0E49\u0E2D\u0E07\u0E41\u0E25\u0E30\u0E40\u0E27\u0E25\u0E32")), /*#__PURE__*/React.createElement("div", {
+    className: "step-line"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: `step ${step >= 3 ? 'active' : ''}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "step-num"
+  }, "3"), /*#__PURE__*/React.createElement("span", null, "\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19")))), /*#__PURE__*/React.createElement("div", {
+    className: "modal-body"
+  }, step === 1 && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "form-group"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "form-label"
+  }, "\u0E0A\u0E37\u0E48\u0E2D-\u0E19\u0E32\u0E21\u0E2A\u0E01\u0E38\u0E25 *"), /*#__PURE__*/React.createElement("input", {
+    className: "form-control",
+    placeholder: "\u0E01\u0E23\u0E2D\u0E01\u0E0A\u0E37\u0E48\u0E2D-\u0E19\u0E32\u0E21\u0E2A\u0E01\u0E38\u0E25",
+    value: form.name,
+    onChange: e => set('name', e.target.value)
+  }), errors.name && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--red-500)',
+      marginTop: '4px'
+    }
+  }, errors.name)), /*#__PURE__*/React.createElement("div", {
+    className: "form-group"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "form-label"
+  }, "\u0E40\u0E1A\u0E2D\u0E23\u0E4C\u0E42\u0E17\u0E23\u0E28\u0E31\u0E1E\u0E17\u0E4C *"), /*#__PURE__*/React.createElement("input", {
+    className: "form-control",
+    placeholder: "0XX-XXX-XXXX",
+    value: form.phone,
+    onChange: e => set('phone', e.target.value)
+  }), errors.phone && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--red-500)',
+      marginTop: '4px'
+    }
+  }, errors.phone)), /*#__PURE__*/React.createElement("div", {
+    className: "form-group"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "form-label"
+  }, "\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C *"), /*#__PURE__*/React.createElement("textarea", {
+    className: "form-control",
+    rows: "3",
+    placeholder: "\u0E23\u0E30\u0E1A\u0E38\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C\u0E01\u0E32\u0E23\u0E43\u0E0A\u0E49\u0E2B\u0E49\u0E2D\u0E07\u0E1B\u0E23\u0E30\u0E0A\u0E38\u0E21",
+    value: form.purpose,
+    onChange: e => set('purpose', e.target.value)
+  }), errors.purpose && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--red-500)',
+      marginTop: '4px'
+    }
+  }, errors.purpose))), step === 2 && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "form-group"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "form-label"
+  }, "\u0E2B\u0E49\u0E2D\u0E07\u0E1B\u0E23\u0E30\u0E0A\u0E38\u0E21 *"), /*#__PURE__*/React.createElement("select", {
+    className: "form-control",
+    value: form.roomId,
+    onChange: e => {
+      set('roomId', e.target.value);
+      set('startTime', '');
+      set('endTime', '');
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "-- \u0E40\u0E25\u0E37\u0E2D\u0E01\u0E2B\u0E49\u0E2D\u0E07 --"), ROOMS.map(r => /*#__PURE__*/React.createElement("option", {
+    key: r.id,
+    value: r.id
+  }, r.icon, " ", r.name, " (", r.capacity, " \u0E17\u0E35\u0E48\u0E19\u0E31\u0E48\u0E07)"))), errors.roomId && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--red-500)',
+      marginTop: '4px'
+    }
+  }, errors.roomId)), /*#__PURE__*/React.createElement("div", {
+    className: "form-group"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "form-label"
+  }, "\u0E40\u0E27\u0E25\u0E32\u0E40\u0E23\u0E34\u0E48\u0E21 *"), /*#__PURE__*/React.createElement("div", {
+    className: "time-grid"
+  }, TIME_SLOTS.slice(0, -1).map(t => /*#__PURE__*/React.createElement("button", {
+    key: t,
+    className: `time-pill ${form.startTime === t ? 'selected' : ''} ${bookedSlots.has(t) ? 'disabled' : ''}`,
+    onClick: () => !bookedSlots.has(t) && (set('startTime', t), set('endTime', '')),
+    disabled: bookedSlots.has(t)
+  }, t))), errors.startTime && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--red-500)',
+      marginTop: '4px'
+    }
+  }, errors.startTime)), form.startTime && /*#__PURE__*/React.createElement("div", {
+    className: "form-group"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "form-label"
+  }, "\u0E40\u0E27\u0E25\u0E32\u0E2A\u0E34\u0E49\u0E19\u0E2A\u0E38\u0E14 * (\u0E2A\u0E39\u0E07\u0E2A\u0E38\u0E14 4 \u0E0A\u0E31\u0E48\u0E27\u0E42\u0E21\u0E07)"), /*#__PURE__*/React.createElement("div", {
+    className: "time-grid"
+  }, endOptions.map(t => {
+    const dur = timeDiff(form.startTime, t);
+    return /*#__PURE__*/React.createElement("button", {
+      key: t,
+      className: `time-pill ${form.endTime === t ? 'selected' : ''}`,
+      onClick: () => set('endTime', t)
+    }, t, " ", /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '10px',
+        opacity: .7
+      }
+    }, "(", dur / 60, "\u0E0A\u0E21.)"));
+  })), errors.endTime && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--red-500)',
+      marginTop: '4px'
+    }
+  }, errors.endTime))), step === 3 && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'var(--green-50)',
+      borderRadius: '12px',
+      padding: '20px',
+      border: '1px solid var(--green-200)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'Prompt',
+      fontWeight: 700,
+      fontSize: '15px',
+      marginBottom: '16px',
+      color: 'var(--teal-700)'
+    }
+  }, "\uD83D\uDCCB \u0E2A\u0E23\u0E38\u0E1B\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07"), [['👤 ผู้จอง', form.name], ['📞 โทร', form.phone], ['🏢 ห้อง', roomName], ['📅 วันที่', formatDateTH(selectedDate)], ['⏰ เวลา', `${form.startTime} – ${form.endTime} น.`], ['⏱️ ระยะเวลา', `${timeDiff(form.startTime, form.endTime) / 60} ชั่วโมง`], ['📝 วัตถุประสงค์', form.purpose]].map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    style: {
+      display: 'flex',
+      gap: '12px',
+      marginBottom: '10px',
+      fontSize: '14px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      minWidth: '120px',
+      color: 'var(--gray-500)',
+      fontWeight: 600
+    }
+  }, k), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'var(--gray-800)'
+    }
+  }, v)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: '16px',
+      padding: '12px 16px',
+      background: '#ccfbf1',
+      borderRadius: '10px',
+      fontSize: '13px',
+      color: 'var(--teal-700)',
+      display: 'flex',
+      gap: '8px',
+      alignItems: 'flex-start'
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCF2"), /*#__PURE__*/React.createElement("span", null, "\u0E23\u0E30\u0E1A\u0E1A\u0E08\u0E30\u0E2A\u0E48\u0E07\u0E01\u0E32\u0E23\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2D\u0E19 LINE \u0E41\u0E25\u0E30\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E19\u0E31\u0E14\u0E2B\u0E21\u0E32\u0E22\u0E43\u0E19 Google Calendar \u0E42\u0E14\u0E22\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34")))), /*#__PURE__*/React.createElement("div", {
+    className: "modal-footer"
+  }, step > 1 && /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-secondary",
+    onClick: () => setStep(s => s - 1)
+  }, "\u2190 \u0E22\u0E49\u0E2D\u0E19\u0E01\u0E25\u0E31\u0E1A"), step < 3 && /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    onClick: () => {
+      if (step === 1) {
+        const e = {};
+        if (!form.name.trim()) e.name = 'กรุณากรอกชื่อ';
+        if (!form.phone.trim()) e.phone = 'กรุณากรอกเบอร์โทร';
+        if (!form.purpose.trim()) e.purpose = 'กรุณากรอกวัตถุประสงค์';
+        setErrors(e);
+        if (Object.keys(e).length === 0) setStep(2);
+      } else if (step === 2) {
+        const e = {};
+        if (!form.roomId) e.roomId = 'กรุณาเลือกห้อง';
+        if (!form.startTime) e.startTime = 'กรุณาเลือกเวลาเริ่ม';
+        if (!form.endTime) e.endTime = 'กรุณาเลือกเวลาสิ้นสุด';
+        setErrors(e);
+        if (Object.keys(e).length === 0) setStep(3);
+      }
+    }
+  }, "\u0E16\u0E31\u0E14\u0E44\u0E1B \u2192"), step === 3 && /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary btn-lg",
+    onClick: submit,
+    disabled: loading
+  }, loading ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "loader"
+  }), " \u0E01\u0E33\u0E25\u0E31\u0E07\u0E08\u0E2D\u0E07...") : '✅ ยืนยันการจอง'))));
+}
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+
+function App() {
+  const [tab, setTab] = useState('dashboard');
+  const [bookings, setBookings] = useState(DEMO);
+  const [selectedDate, setSelectedDate] = useState(today());
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [filterRoom, setFilterRoom] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+  const [gcalEnabled, setGcalEnabled] = useState(true);
+  const [lineEnabled, setLineEnabled] = useState(true);
+  const [cancelConfirm, setCancelConfirm] = useState(null);
+  const {
+    toasts,
+    show: toast
+  } = useToast();
+  const bookingsForDate = useMemo(() => bookings.filter(b => b.date === selectedDate && b.status === 'confirmed'), [bookings, selectedDate]);
+  const isRoomBooked = useCallback((roomId, startTime, endTime) => {
+    return bookingsForDate.some(b => b.roomId === roomId && b.startTime < (endTime || '23:59') && b.endTime > (startTime || '00:00'));
+  }, [bookingsForDate]);
+  const handleBook = formData => {
+    const newBooking = {
+      id: genId(),
+      ...formData,
+      status: 'confirmed',
+      createdAt: new Date().toISOString()
+    };
+
+    // Check overlap
+    const overlap = bookings.some(b => b.date === formData.date && b.roomId === formData.roomId && b.status === 'confirmed' && formData.startTime < b.endTime && formData.endTime > b.startTime);
+    if (overlap) {
+      toast('เวลานี้ถูกจองแล้ว กรุณาเลือกเวลาอื่น', 'error');
+      return;
+    }
+    setBookings(p => [...p, newBooking]);
+    setShowForm(false);
+    setSelectedRoom(null);
+    if (gcalEnabled) toast(`📅 สร้างนัดใน Google Calendar แล้ว`, 'info');
+    if (lineEnabled) {
+      const room = ROOMS.find(r => r.id === formData.roomId);
+      toast(`📲 LINE: มีการจองห้องประชุม: ${room?.name} เวลา ${formData.startTime}`, 'success');
+    }
+    setTimeout(() => toast('✅ จองห้องประชุมสำเร็จ!', 'success'), 200);
+  };
+  const handleCancel = id => {
+    setBookings(p => p.map(b => b.id === id ? {
+      ...b,
+      status: 'cancelled'
+    } : b));
+    setCancelConfirm(null);
+    if (lineEnabled) toast('📲 LINE: แจ้งยกเลิกการจองแล้ว', 'info');
+    if (gcalEnabled) toast('📅 ลบนัดหมายใน Google Calendar แล้ว', 'info');
+    toast('ยกเลิกการจองเรียบร้อย', 'success');
+  };
+
+  // Analytics
+  const analytics = useMemo(() => {
+    const confirmed = bookings.filter(b => b.status === 'confirmed');
+    const roomCount = {};
+    const hourCount = {};
+    ROOMS.forEach(r => roomCount[r.id] = 0);
+    TIME_SLOTS.slice(0, 16).forEach(t => hourCount[t] = 0);
+    confirmed.forEach(b => {
+      roomCount[b.roomId] = (roomCount[b.roomId] || 0) + 1;
+      if (hourCount[b.startTime] !== undefined) hourCount[b.startTime]++;
+    });
+    const topRoom = Object.entries(roomCount).sort((a, b) => b[1] - a[1])[0];
+    const topHour = Object.entries(hourCount).sort((a, b) => b[1] - a[1])[0];
+    const maxRoomCount = Math.max(...Object.values(roomCount), 1);
+    const maxHourCount = Math.max(...Object.values(hourCount), 1);
+    return {
+      confirmed,
+      roomCount,
+      hourCount,
+      topRoom,
+      topHour,
+      maxRoomCount,
+      maxHourCount
+    };
+  }, [bookings]);
+  const filteredBookings = useMemo(() => {
+    return bookings.filter(b => !filterRoom || b.roomId === filterRoom).filter(b => !filterDate || b.date === filterDate).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [bookings, filterRoom, filterDate]);
+  const TABS = [{
+    id: 'dashboard',
+    label: 'แดชบอร์ด',
+    icon: '🏠'
+  }, {
+    id: 'bookings',
+    label: 'การจองของฉัน',
+    icon: '📋'
+  }, {
+    id: 'analytics',
+    label: 'สถิติ',
+    icon: '📊'
+  }, {
+    id: 'settings',
+    label: 'การตั้งค่า',
+    icon: '⚙️'
+  }];
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("header", {
+    className: "header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "header-inner"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "header-brand"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "header-logo"
+  }, "\uD83C\uDFE2"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "header-title"
+  }, "Smart Meeting Room Booking"), /*#__PURE__*/React.createElement("div", {
+    className: "header-sub"
+  }, "\u0E23\u0E30\u0E1A\u0E1A\u0E08\u0E2D\u0E07\u0E2B\u0E49\u0E2D\u0E07\u0E1B\u0E23\u0E30\u0E0A\u0E38\u0E21\u0E2D\u0E31\u0E08\u0E09\u0E23\u0E34\u0E22\u0E30"))), /*#__PURE__*/React.createElement("nav", {
+    className: "header-nav"
+  }, TABS.map(t => /*#__PURE__*/React.createElement("button", {
+    key: t.id,
+    className: `nav-btn ${tab === t.id ? 'active' : ''}`,
+    onClick: () => setTab(t.id)
+  }, t.icon, " ", t.label))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "dot-live"
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '12px',
+      opacity: .85
+    }
+  }, "Live")))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '12px 16px 0',
+      display: 'none'
+    },
+    className: "mobile-tabs"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tabs"
+  }, TABS.map(t => /*#__PURE__*/React.createElement("button", {
+    key: t.id,
+    className: `tab ${tab === t.id ? 'active' : ''}`,
+    onClick: () => setTab(t.id)
+  }, t.icon, " ", t.label)))), /*#__PURE__*/React.createElement("main", {
+    className: "main"
+  }, tab === 'dashboard' && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: '24px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: '12px'
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "\uD83C\uDFE0 \u0E41\u0E14\u0E0A\u0E1A\u0E2D\u0E23\u0E4C\u0E14"), /*#__PURE__*/React.createElement("div", {
+    className: "section-sub"
+  }, "\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48 ", formatDateTH(selectedDate), " \xB7 ", bookingsForDate.length, " \u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07\u0E27\u0E31\u0E19\u0E19\u0E35\u0E49")), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary btn-lg",
+    onClick: () => setShowForm(true)
+  }, "+ \u0E08\u0E2D\u0E07\u0E2B\u0E49\u0E2D\u0E07\u0E1B\u0E23\u0E30\u0E0A\u0E38\u0E21")), /*#__PURE__*/React.createElement("div", {
+    className: "grid-2",
+    style: {
+      alignItems: 'start'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, "\uD83D\uDCC5 \u0E1B\u0E0F\u0E34\u0E17\u0E34\u0E19"), /*#__PURE__*/React.createElement("span", {
+    className: "badge badge-info"
+  }, "\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48")), /*#__PURE__*/React.createElement("div", {
+    className: "card-body"
+  }, /*#__PURE__*/React.createElement(Calendar, {
+    selected: selectedDate,
+    onSelect: setSelectedDate,
+    bookings: bookings
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: '16px',
+      padding: '12px',
+      background: 'var(--green-50)',
+      borderRadius: '8px',
+      fontSize: '13px',
+      color: 'var(--green-600)'
+    }
+  }, "\uD83D\uDCC5 \u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E40\u0E25\u0E37\u0E2D\u0E01: ", /*#__PURE__*/React.createElement("strong", null, formatDateTH(selectedDate))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: '10px',
+      fontSize: '12px',
+      color: 'var(--gray-400)',
+      display: 'flex',
+      gap: '12px'
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDD35 = \u0E21\u0E35\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07"), /*#__PURE__*/React.createElement("span", null, "\uD83D\uDFE2 = \u0E27\u0E31\u0E19\u0E19\u0E35\u0E49")))), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, "\uD83C\uDFE2 \u0E2B\u0E49\u0E2D\u0E07\u0E1B\u0E23\u0E30\u0E0A\u0E38\u0E21"), /*#__PURE__*/React.createElement("span", {
+    className: "badge badge-success"
+  }, ROOMS.length - bookingsForDate.map(b => b.roomId).filter((v, i, a) => a.indexOf(v) === i).length, " \u0E27\u0E48\u0E32\u0E07")), /*#__PURE__*/React.createElement("div", {
+    className: "card-body",
+    style: {
+      padding: '16px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px'
+    }
+  }, ROOMS.map(room => {
+    const booked = isRoomBooked(room.id);
+    return /*#__PURE__*/React.createElement("div", {
+      key: room.id,
+      className: `room-card ${booked ? 'room-booked' : 'room-available'} ${selectedRoom?.id === room.id ? 'room-selected' : ''}`,
+      style: {
+        marginBottom: 0
+      },
+      onClick: () => {
+        if (!booked) {
+          setSelectedRoom(room);
+          setShowForm(true);
+        }
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '20px'
+      }
+    }, room.icon), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "room-name",
+      style: {
+        marginBottom: '2px'
+      }
+    }, room.name), /*#__PURE__*/React.createElement("div", {
+      className: "room-capacity",
+      style: {
+        marginBottom: 0
+      }
+    }, "\uD83D\uDC65 ", room.capacity, " \xB7 \u0E0A\u0E31\u0E49\u0E19 ", room.floor)), /*#__PURE__*/React.createElement("span", {
+      className: `room-status ${booked ? 'status-booked' : 'status-available'}`,
+      style: {
+        fontSize: '11px'
+      }
+    }, booked ? '❌ ถูกจอง' : '✅ ว่าง')));
+  }))))), bookingsForDate.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "card",
+    style: {
+      marginTop: '24px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, "\uD83D\uDCCB \u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07\u0E27\u0E31\u0E19\u0E19\u0E35\u0E49"), /*#__PURE__*/React.createElement("span", {
+    className: "badge badge-warning"
+  }, bookingsForDate.length, " \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23")), /*#__PURE__*/React.createElement("div", {
+    className: "table-wrap"
+  }, /*#__PURE__*/React.createElement("table", null, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "\u0E1C\u0E39\u0E49\u0E08\u0E2D\u0E07"), /*#__PURE__*/React.createElement("th", null, "\u0E2B\u0E49\u0E2D\u0E07"), /*#__PURE__*/React.createElement("th", null, "\u0E40\u0E27\u0E25\u0E32"), /*#__PURE__*/React.createElement("th", null, "\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C"), /*#__PURE__*/React.createElement("th", null, "\u0E2A\u0E16\u0E32\u0E19\u0E30"))), /*#__PURE__*/React.createElement("tbody", null, bookingsForDate.map(b => /*#__PURE__*/React.createElement("tr", {
+    key: b.id
+  }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 600
+    }
+  }, b.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--gray-400)'
+    }
+  }, b.phone)), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", null, ROOMS.find(r => r.id === b.roomId)?.icon, " "), ROOMS.find(r => r.id === b.roomId)?.name), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 600,
+      color: 'var(--teal-600)'
+    }
+  }, b.startTime), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'var(--gray-400)'
+    }
+  }, " \u2013 "), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 600,
+      color: 'var(--teal-600)'
+    }
+  }, b.endTime)), /*#__PURE__*/React.createElement("td", {
+    style: {
+      maxWidth: '200px'
+    }
+  }, b.purpose), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
+    className: "badge badge-success"
+  }, "\u2705 \u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E41\u0E25\u0E49\u0E27"))))))))), tab === 'bookings' && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: '24px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: '12px'
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "\uD83D\uDCCB \u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07\u0E02\u0E2D\u0E07\u0E09\u0E31\u0E19"), /*#__PURE__*/React.createElement("div", {
+    className: "section-sub"
+  }, filteredBookings.length, " \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14")), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    onClick: () => setShowForm(true)
+  }, "+ \u0E08\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48")), /*#__PURE__*/React.createElement("div", {
+    className: "card",
+    style: {
+      marginBottom: '16px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-body",
+    style: {
+      padding: '16px 24px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: '12px',
+      flexWrap: 'wrap',
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: '160px'
+    }
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "form-control",
+    value: filterRoom,
+    onChange: e => setFilterRoom(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "\uD83C\uDFE2 \u0E17\u0E38\u0E01\u0E2B\u0E49\u0E2D\u0E07"), ROOMS.map(r => /*#__PURE__*/React.createElement("option", {
+    key: r.id,
+    value: r.id
+  }, r.name)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: '160px'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    className: "form-control",
+    value: filterDate,
+    onChange: e => setFilterDate(e.target.value)
+  })), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-secondary btn-sm",
+    onClick: () => {
+      setFilterRoom('');
+      setFilterDate('');
+    }
+  }, "\u0E25\u0E49\u0E32\u0E07\u0E15\u0E31\u0E27\u0E01\u0E23\u0E2D\u0E07")))), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "table-wrap"
+  }, filteredBookings.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "empty-state"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "empty-state-icon"
+  }, "\uD83D\uDCED"), /*#__PURE__*/React.createElement("div", {
+    className: "empty-state-text"
+  }, "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07"), /*#__PURE__*/React.createElement("div", {
+    className: "empty-state-sub"
+  }, "\u0E25\u0E2D\u0E07\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E15\u0E31\u0E27\u0E01\u0E23\u0E2D\u0E07\u0E2B\u0E23\u0E37\u0E2D\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48")) : /*#__PURE__*/React.createElement("table", null, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "#"), /*#__PURE__*/React.createElement("th", null, "\u0E1C\u0E39\u0E49\u0E08\u0E2D\u0E07"), /*#__PURE__*/React.createElement("th", null, "\u0E2B\u0E49\u0E2D\u0E07"), /*#__PURE__*/React.createElement("th", null, "\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48"), /*#__PURE__*/React.createElement("th", null, "\u0E40\u0E27\u0E25\u0E32"), /*#__PURE__*/React.createElement("th", null, "\u0E27\u0E31\u0E15\u0E16\u0E38\u0E1B\u0E23\u0E30\u0E2A\u0E07\u0E04\u0E4C"), /*#__PURE__*/React.createElement("th", null, "\u0E2A\u0E16\u0E32\u0E19\u0E30"), /*#__PURE__*/React.createElement("th", null, "\u0E08\u0E31\u0E14\u0E01\u0E32\u0E23"))), /*#__PURE__*/React.createElement("tbody", null, filteredBookings.map((b, i) => {
+    const room = ROOMS.find(r => r.id === b.roomId);
+    return /*#__PURE__*/React.createElement("tr", {
+      key: b.id
+    }, /*#__PURE__*/React.createElement("td", {
+      style: {
+        color: 'var(--gray-400)',
+        fontSize: '12px'
+      }
+    }, i + 1), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 600
+      }
+    }, b.name), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '12px',
+        color: 'var(--gray-400)'
+      }
+    }, b.phone)), /*#__PURE__*/React.createElement("td", null, room?.icon, " ", room?.name), /*#__PURE__*/React.createElement("td", {
+      style: {
+        fontSize: '12px',
+        color: 'var(--teal-600)',
+        fontWeight: 500
+      }
+    }, formatDateTH(b.date)), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 600
+      }
+    }, b.startTime), " \u2013 ", /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 600
+      }
+    }, b.endTime), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '11px',
+        color: 'var(--gray-400)'
+      }
+    }, timeDiff(b.startTime, b.endTime) / 60, " \u0E0A\u0E21.")), /*#__PURE__*/React.createElement("td", {
+      style: {
+        maxWidth: '180px',
+        fontSize: '13px'
+      }
+    }, b.purpose), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
+      className: `badge ${b.status === 'confirmed' ? 'badge-success' : 'badge-danger'}`
+    }, b.status === 'confirmed' ? '✅ ยืนยัน' : '❌ ยกเลิก')), /*#__PURE__*/React.createElement("td", null, b.status === 'confirmed' && /*#__PURE__*/React.createElement("button", {
+      className: "btn btn-danger btn-sm",
+      onClick: () => setCancelConfirm(b)
+    }, "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01")));
+  })))))), tab === 'analytics' && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: '24px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "\uD83D\uDCCA \u0E2A\u0E16\u0E34\u0E15\u0E34\u0E01\u0E32\u0E23\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19"), /*#__PURE__*/React.createElement("div", {
+    className: "section-sub"
+  }, "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07\u0E2B\u0E49\u0E2D\u0E07\u0E1B\u0E23\u0E30\u0E0A\u0E38\u0E21\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14")), /*#__PURE__*/React.createElement("div", {
+    className: "stats-grid"
+  }, [{
+    icon: '📋',
+    label: 'การจองทั้งหมด',
+    value: bookings.length,
+    cls: 'stat-icon-green'
+  }, {
+    icon: '✅',
+    label: 'ยืนยันแล้ว',
+    value: analytics.confirmed.length,
+    cls: 'stat-icon-teal'
+  }, {
+    icon: '❌',
+    label: 'ยกเลิกแล้ว',
+    value: bookings.filter(b => b.status === 'cancelled').length,
+    cls: 'stat-icon-blue'
+  }, {
+    icon: '📅',
+    label: 'จองวันนี้',
+    value: bookings.filter(b => b.date === today() && b.status === 'confirmed').length,
+    cls: 'stat-icon-amber'
+  }].map(s => /*#__PURE__*/React.createElement("div", {
+    key: s.label,
+    className: "stat-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `stat-icon ${s.cls}`
+  }, s.icon), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "stat-value"
+  }, s.value), /*#__PURE__*/React.createElement("div", {
+    className: "stat-label"
+  }, s.label))))), /*#__PURE__*/React.createElement("div", {
+    className: "grid-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, "\uD83C\uDFE2 \u0E01\u0E32\u0E23\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E41\u0E15\u0E48\u0E25\u0E30\u0E2B\u0E49\u0E2D\u0E07")), /*#__PURE__*/React.createElement("div", {
+    className: "card-body"
+  }, ROOMS.map(room => {
+    const count = analytics.roomCount[room.id] || 0;
+    const pct = analytics.maxRoomCount > 0 ? count / analytics.maxRoomCount * 100 : 0;
+    return /*#__PURE__*/React.createElement("div", {
+      key: room.id,
+      style: {
+        marginBottom: '16px'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: '6px',
+        fontSize: '13px'
+      }
+    }, /*#__PURE__*/React.createElement("span", null, room.icon, " ", room.name), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 700,
+        color: 'var(--teal-600)'
+      }
+    }, count, " \u0E04\u0E23\u0E31\u0E49\u0E07")), /*#__PURE__*/React.createElement("div", {
+      className: "progress-bar"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "progress-fill",
+      style: {
+        width: `${pct}%`
+      }
+    })));
+  }), analytics.topRoom && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: '12px',
+      padding: '10px 14px',
+      background: 'var(--green-50)',
+      borderRadius: '8px',
+      fontSize: '13px',
+      color: 'var(--green-700)'
+    }
+  }, "\uD83C\uDFC6 \u0E2B\u0E49\u0E2D\u0E07\u0E17\u0E35\u0E48\u0E43\u0E0A\u0E49\u0E21\u0E32\u0E01\u0E2A\u0E38\u0E14: ", /*#__PURE__*/React.createElement("strong", null, ROOMS.find(r => r.id === analytics.topRoom[0])?.name), " (", analytics.topRoom[1], " \u0E04\u0E23\u0E31\u0E49\u0E07)"))), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, "\u23F0 \u0E0A\u0E48\u0E27\u0E07\u0E40\u0E27\u0E25\u0E32\u0E22\u0E2D\u0E14\u0E19\u0E34\u0E22\u0E21")), /*#__PURE__*/React.createElement("div", {
+    className: "card-body"
+  }, Object.entries(analytics.hourCount).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([t, c]) => {
+    const pct = analytics.maxHourCount > 0 ? c / analytics.maxHourCount * 100 : 0;
+    return /*#__PURE__*/React.createElement("div", {
+      key: t,
+      style: {
+        marginBottom: '12px'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: '4px',
+        fontSize: '13px'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 600,
+        color: 'var(--gray-700)'
+      }
+    }, "\u23F0 ", t), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 700,
+        color: 'var(--teal-600)'
+      }
+    }, c, " \u0E04\u0E23\u0E31\u0E49\u0E07")), /*#__PURE__*/React.createElement("div", {
+      className: "progress-bar"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "progress-fill",
+      style: {
+        width: `${pct}%`
+      }
+    })));
+  }), Object.values(analytics.hourCount).every(v => v === 0) && /*#__PURE__*/React.createElement("div", {
+    className: "empty-state",
+    style: {
+      padding: '24px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '32px',
+      marginBottom: '8px'
+    }
+  }, "\uD83D\uDCCA"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '14px',
+      color: 'var(--gray-400)'
+    }
+  }, "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25")), analytics.topHour && analytics.hourCount[analytics.topHour[0]] > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: '12px',
+      padding: '10px 14px',
+      background: 'var(--green-50)',
+      borderRadius: '8px',
+      fontSize: '13px',
+      color: 'var(--green-700)'
+    }
+  }, "\uD83D\uDD25 \u0E0A\u0E48\u0E27\u0E07\u0E40\u0E27\u0E25\u0E32\u0E22\u0E2D\u0E14\u0E19\u0E34\u0E22\u0E21: ", /*#__PURE__*/React.createElement("strong", null, analytics.topHour[0], " \u0E19.")))))), tab === 'settings' && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: '24px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "\u2699\uFE0F \u0E01\u0E32\u0E23\u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32"), /*#__PURE__*/React.createElement("div", {
+    className: "section-sub"
+  }, "\u0E08\u0E31\u0E14\u0E01\u0E32\u0E23\u0E01\u0E32\u0E23\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E41\u0E25\u0E30\u0E01\u0E32\u0E23\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2D\u0E19")), /*#__PURE__*/React.createElement("div", {
+    className: "grid-2",
+    style: {
+      alignItems: 'start'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, "\uD83D\uDD0C \u0E01\u0E32\u0E23\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D API")), /*#__PURE__*/React.createElement("div", {
+    className: "card-body"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "integration-row"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "integration-info"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "integration-icon int-google"
+  }, "\uD83D\uDCC5"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 600,
+      fontSize: '14px'
+    }
+  }, "Google Calendar"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--gray-400)'
+    }
+  }, "\u0E2A\u0E23\u0E49\u0E32\u0E07/\u0E25\u0E1A\u0E19\u0E31\u0E14\u0E2B\u0E21\u0E32\u0E22\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34"), gcalEnabled && /*#__PURE__*/React.createElement("span", {
+    className: "badge badge-success",
+    style: {
+      marginTop: '4px'
+    }
+  }, "\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E41\u0E25\u0E49\u0E27"))), /*#__PURE__*/React.createElement("label", {
+    className: "toggle"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: gcalEnabled,
+    onChange: e => {
+      setGcalEnabled(e.target.checked);
+      toast(e.target.checked ? '📅 เปิด Google Calendar แล้ว' : '📅 ปิด Google Calendar แล้ว', 'info');
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "toggle-slider"
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "integration-row"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "integration-info"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "integration-icon int-line"
+  }, "\uD83D\uDCAC"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 600,
+      fontSize: '14px'
+    }
+  }, "LINE Notify"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--gray-400)'
+    }
+  }, "\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2D\u0E19\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07/\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01"), lineEnabled && /*#__PURE__*/React.createElement("span", {
+    className: "badge badge-success",
+    style: {
+      marginTop: '4px'
+    }
+  }, "\u0E40\u0E1B\u0E34\u0E14\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19"))), /*#__PURE__*/React.createElement("label", {
+    className: "toggle"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: lineEnabled,
+    onChange: e => {
+      setLineEnabled(e.target.checked);
+      toast(e.target.checked ? '💬 เปิด LINE Notify แล้ว' : '💬 ปิด LINE Notify แล้ว', 'info');
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "toggle-slider"
+  }))))), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, "\uD83D\uDCCB API Endpoints")), /*#__PURE__*/React.createElement("div", {
+    className: "card-body"
+  }, [{
+    method: 'POST',
+    path: '/api/booking',
+    desc: 'สร้างการจองใหม่',
+    color: '#d1fae5',
+    textColor: '#065f46'
+  }, {
+    method: 'GET',
+    path: '/api/booking',
+    desc: 'ดึงรายการจองทั้งหมด',
+    color: '#dbeafe',
+    textColor: '#1e40af'
+  }, {
+    method: 'GET',
+    path: '/api/booking/:id',
+    desc: 'ดึงข้อมูลการจอง',
+    color: '#dbeafe',
+    textColor: '#1e40af'
+  }, {
+    method: 'DELETE',
+    path: '/api/booking/:id',
+    desc: 'ยกเลิกการจอง',
+    color: '#fee2e2',
+    textColor: '#991b1b'
+  }].map(ep => /*#__PURE__*/React.createElement("div", {
+    key: ep.method + ep.path,
+    style: {
+      padding: '10px 0',
+      borderBottom: '1px solid var(--gray-100)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      marginBottom: '3px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '11px',
+      fontWeight: 700,
+      padding: '2px 8px',
+      borderRadius: '4px',
+      background: ep.color,
+      color: ep.textColor,
+      fontFamily: 'monospace'
+    }
+  }, ep.method), /*#__PURE__*/React.createElement("code", {
+    style: {
+      fontSize: '13px',
+      color: 'var(--gray-700)',
+      fontFamily: 'monospace'
+    }
+  }, ep.path)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--gray-400)',
+      paddingLeft: '4px'
+    }
+  }, ep.desc))))), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, "\uD83D\uDDC2\uFE0F Data Model")), /*#__PURE__*/React.createElement("div", {
+    className: "card-body"
+  }, /*#__PURE__*/React.createElement("pre", {
+    style: {
+      fontSize: '12px',
+      lineHeight: 1.7,
+      color: 'var(--gray-600)',
+      background: 'var(--gray-50)',
+      padding: '16px',
+      borderRadius: '8px',
+      overflow: 'auto',
+      fontFamily: 'monospace'
+    }
+  }, `booking = {
+  id:        string (auto)
+  name:      string
+  phone:     string
+  roomId:    string
+  date:      YYYY-MM-DD
+  startTime: HH:MM
+  endTime:   HH:MM
+  purpose:   string
+  status:    confirmed | cancelled
+  createdAt: ISO datetime
+}`))), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, "\uD83C\uDFE2 \u0E2B\u0E49\u0E2D\u0E07\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14")), /*#__PURE__*/React.createElement("div", {
+    className: "card-body"
+  }, ROOMS.map(r => /*#__PURE__*/React.createElement("div", {
+    key: r.id,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '10px 0',
+      borderBottom: '1px solid var(--gray-100)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '20px'
+    }
+  }, r.icon), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '13px',
+      fontWeight: 600
+    }
+  }, r.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '12px',
+      color: 'var(--gray-400)'
+    }
+  }, "\u0E0A\u0E31\u0E49\u0E19 ", r.floor, " \xB7 ", r.capacity, " \u0E17\u0E35\u0E48\u0E19\u0E31\u0E48\u0E07")), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '11px',
+      padding: '3px 8px',
+      borderRadius: '4px',
+      background: 'var(--gray-100)',
+      color: 'var(--gray-500)',
+      fontFamily: 'monospace'
+    }
+  }, r.id))))))), /*#__PURE__*/React.createElement("div", {
+    className: "design-credit"
+  }, "\u0E2D\u0E2D\u0E01\u0E41\u0E1A\u0E1A\u0E42\u0E14\u0E22 Canva \xB7 Smart Meeting Room Booking System v1.0")), showForm && /*#__PURE__*/React.createElement(BookingForm, {
+    bookings: bookings,
+    selectedDate: selectedDate,
+    selectedRoom: selectedRoom,
+    onBook: handleBook,
+    onClose: () => {
+      setShowForm(false);
+      setSelectedRoom(null);
+    }
+  }), cancelConfirm && /*#__PURE__*/React.createElement("div", {
+    className: "modal-overlay",
+    onClick: e => e.target === e.currentTarget && setCancelConfirm(null)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal fade-in",
+    style: {
+      maxWidth: '400px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-title"
+  }, "\u26A0\uFE0F \u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E01\u0E32\u0E23\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01"), /*#__PURE__*/React.createElement("button", {
+    className: "modal-close",
+    onClick: () => setCancelConfirm(null)
+  }, "\u2715")), /*#__PURE__*/React.createElement("div", {
+    className: "modal-body"
+  }, /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '14px',
+      color: 'var(--gray-600)',
+      lineHeight: 1.6
+    }
+  }, "\u0E04\u0E38\u0E13\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: 'var(--gray-800)'
+    }
+  }, ROOMS.find(r => r.id === cancelConfirm.roomId)?.name), /*#__PURE__*/React.createElement("br", null), "\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48 ", formatDateTH(cancelConfirm.date), " \u0E40\u0E27\u0E25\u0E32 ", cancelConfirm.startTime, "\u2013", cancelConfirm.endTime, " \u0E19. \u0E43\u0E0A\u0E48\u0E2B\u0E23\u0E37\u0E2D\u0E44\u0E21\u0E48?"), (gcalEnabled || lineEnabled) && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: '12px',
+      padding: '10px 14px',
+      background: '#fef9c3',
+      borderRadius: '8px',
+      fontSize: '12px',
+      color: '#854d0e'
+    }
+  }, "\u26A0\uFE0F \u0E23\u0E30\u0E1A\u0E1A\u0E08\u0E30\u0E25\u0E1A\u0E19\u0E31\u0E14\u0E2B\u0E21\u0E32\u0E22 Google Calendar \u0E41\u0E25\u0E30\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2D\u0E19\u0E1C\u0E48\u0E32\u0E19 LINE \u0E42\u0E14\u0E22\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34")), /*#__PURE__*/React.createElement("div", {
+    className: "modal-footer"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-secondary",
+    onClick: () => setCancelConfirm(null)
+  }, "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-danger",
+    onClick: () => handleCancel(cancelConfirm.id)
+  }, "\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E01\u0E32\u0E23\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01")))), /*#__PURE__*/React.createElement("div", {
+    className: "toast-container"
+  }, toasts.map(t => /*#__PURE__*/React.createElement("div", {
+    key: t.id,
+    className: `toast toast-${t.type}`
+  }, /*#__PURE__*/React.createElement("span", null, t.msg)))));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
+</script>
+</body>
+</html>

@@ -1,0 +1,321 @@
+{
+  "canva_design_spec": {
+    "version": "1.0.0",
+    "project_name": "Smart Meeting Room Booking",
+    "project_name_th": "ระบบจองห้องประชุมอัจฉริยะ",
+    "created_at": "2026-03-25",
+    "designed_by": "Canva",
+    "handoff_note": "หน้านี้คือ /dashboard — หน้าหลักที่แสดงทันทีหลังจาก Landing Page โดยไม่ต้องผ่านหน้า Login หรือหน้าอื่น"
+  },
+
+  "routing": {
+    "entry_flow": [
+      {
+        "step": 1,
+        "path": "/",
+        "page": "Landing Page",
+        "note": "มีอยู่แล้ว — ไม่ต้องออกแบบใหม่",
+        "next": "/dashboard"
+      },
+      {
+        "step": 2,
+        "path": "/dashboard",
+        "page": "Smart Meeting Room Booking — Main App",
+        "note": "⭐ หน้านี้คือหน้าหลัก ให้ยึดเป็น main page หลัง Landing Page",
+        "is_main_page": true,
+        "previous": "/"
+      }
+    ],
+    "internal_tabs": [
+      { "id": "dashboard",  "label": "แดชบอร์ด",       "icon": "🏠", "path": "/dashboard" },
+      { "id": "bookings",   "label": "การจองของฉัน",   "icon": "📋", "path": "/dashboard/bookings" },
+      { "id": "analytics",  "label": "สถิติ",           "icon": "📊", "path": "/dashboard/analytics" },
+      { "id": "settings",   "label": "การตั้งค่า",      "icon": "⚙️", "path": "/dashboard/settings" }
+    ]
+  },
+
+  "design_tokens": {
+    "colors": {
+      "primary_gradient": "linear-gradient(135deg, #0d9488 0%, #14b8a6 50%, #2dd4bf 100%)",
+      "background":       "linear-gradient(135deg, #f0faf4 0%, #f0fdf9 50%, #ffffff 100%)",
+      "surface":          "#ffffff",
+      "border":           "#dcf5e7",
+      "teal_500":         "#14b8a6",
+      "teal_600":         "#0d9488",
+      "green_500":        "#28a55a",
+      "green_600":        "#1c8646",
+      "gray_700":         "#334155",
+      "gray_800":         "#1e293b",
+      "red_500":          "#ef4444",
+      "status_available": { "bg": "#dcf5e7", "text": "#1c8646" },
+      "status_booked":    { "bg": "#fee2e2", "text": "#ef4444" }
+    },
+    "typography": {
+      "display_font":  "Prompt",
+      "body_font":     "Sarabun",
+      "font_source":   "Google Fonts",
+      "sizes": {
+        "page_title":   "20px / 700",
+        "card_title":   "16px / 600",
+        "body":         "14px / 400",
+        "label":        "13px / 600 uppercase",
+        "small":        "12px / 400",
+        "stat_value":   "28px / 700"
+      }
+    },
+    "spacing": {
+      "page_padding":   "24px",
+      "card_padding":   "24px",
+      "gap_default":    "16px",
+      "gap_large":      "24px"
+    },
+    "radius": {
+      "sm":   "8px",
+      "md":   "12px",
+      "lg":   "16px",
+      "xl":   "24px",
+      "pill": "20px"
+    },
+    "shadows": {
+      "card":    "0 4px 12px rgba(0,0,0,0.10)",
+      "button":  "0 4px 15px rgba(20,184,166,0.30)",
+      "modal":   "0 25px 60px rgba(0,0,0,0.25)"
+    }
+  },
+
+  "components": {
+    "header": {
+      "type": "sticky_top",
+      "height": "72px",
+      "background": "primary_gradient",
+      "elements": [
+        { "id": "logo",     "type": "icon_box",   "content": "🏢", "size": "44px", "style": "glass" },
+        { "id": "title",    "type": "text",        "value": "Smart Meeting Room Booking", "font": "Prompt 18px/600" },
+        { "id": "subtitle", "type": "text",        "value": "ระบบจองห้องประชุมอัจฉริยะ",  "font": "Sarabun 12px/400", "opacity": 0.85 },
+        { "id": "nav",      "type": "nav_buttons", "items": "routing.internal_tabs" },
+        { "id": "live_dot", "type": "pulse_dot",   "color": "#4ec07a", "label": "Live" }
+      ]
+    },
+
+    "tabs_mobile": {
+      "type": "segmented_control",
+      "visible_on": "mobile",
+      "background": "#f1f5f9",
+      "active_style": { "bg": "#ffffff", "text": "#0d9488", "shadow": "card" }
+    },
+
+    "calendar": {
+      "type": "month_calendar",
+      "locale": "th-TH",
+      "year_offset": 543,
+      "day_states": {
+        "default":  { "border": "transparent", "text": "#334155" },
+        "today":    { "bg": "#dcf5e7", "border": "#86d9a8", "text": "#1c8646", "weight": 700 },
+        "selected": { "bg": "primary_gradient", "text": "#ffffff", "shadow": "button" },
+        "past":     { "text": "#cbd5e1", "cursor": "not-allowed" },
+        "has_booking": { "dot": "#2dd4bf", "dot_size": "4px", "dot_position": "bottom-center" }
+      }
+    },
+
+    "room_card": {
+      "type": "interactive_card",
+      "states": {
+        "available": { "border": "#bbebcf", "cursor": "pointer",     "hover": { "border": "#2dd4bf", "translateY": "-2px", "shadow": "card" } },
+        "booked":    { "border": "#f87171", "opacity": 0.7,          "cursor": "not-allowed" },
+        "selected":  { "border": "#14b8a6", "ring": "rgba(20,184,166,0.20)" }
+      },
+      "top_accent_bar": { "height": "3px", "gradient": "linear-gradient(90deg, #2dd4bf, #4ec07a)", "on_hover_or_selected": true },
+      "fields": ["icon", "name", "capacity", "floor", "status_badge", "booking_time_chips"]
+    },
+
+    "status_badge": {
+      "available": { "bg": "#dcf5e7", "text": "#1c8646", "label": "✅ ว่าง" },
+      "booked":    { "bg": "#fee2e2", "text": "#ef4444", "label": "❌ ถูกจอง" }
+    },
+
+    "booking_form_modal": {
+      "type": "multi_step_modal",
+      "max_width": "560px",
+      "backdrop": "rgba(0,0,0,0.5) blur(4px)",
+      "steps": [
+        { "step": 1, "title": "ข้อมูลผู้จอง",       "fields": ["name", "phone", "purpose"] },
+        { "step": 2, "title": "เลือกห้องและเวลา",   "fields": ["roomId", "startTime", "endTime"] },
+        { "step": 3, "title": "ยืนยัน",              "fields": ["summary_card", "integration_notice"] }
+      ],
+      "step_indicator": { "active_color": "#14b8a6", "done_color": "#4ec07a", "default_color": "#e2e8f0" },
+      "time_picker": {
+        "type": "pill_grid",
+        "slot_interval": "30min",
+        "range": "07:00–20:00",
+        "max_duration": "4h",
+        "booked_style": { "opacity": 0.3, "cursor": "not-allowed" },
+        "selected_style": { "bg": "#14b8a6", "text": "#ffffff" }
+      }
+    },
+
+    "stat_card": {
+      "type": "metric_card",
+      "layout": "icon_left + value_right",
+      "icon_size": "48px",
+      "icon_radius": "12px",
+      "value_font": "Prompt 28px/700",
+      "label_font": "Sarabun 12px/400"
+    },
+
+    "data_table": {
+      "type": "responsive_table",
+      "header_style": { "bg": "#f8fafc", "text": "#64748b", "font": "11px/700 uppercase", "letter_spacing": "0.5px" },
+      "row_hover":    { "bg": "#f0faf4" },
+      "cell_font":    "Sarabun 13px/400"
+    },
+
+    "progress_bar": {
+      "height": "8px",
+      "radius": "4px",
+      "track_color": "#f1f5f9",
+      "fill_gradient": "linear-gradient(90deg, #2dd4bf, #4ec07a)",
+      "transition": "width 0.5s ease"
+    },
+
+    "toast": {
+      "position": "bottom-right",
+      "offset": "24px",
+      "radius": "12px",
+      "font": "Sarabun 14px/500",
+      "variants": {
+        "success": "linear-gradient(135deg, #28a55a, #14b8a6)",
+        "error":   "linear-gradient(135deg, #ef4444, #dc2626)",
+        "info":    "linear-gradient(135deg, #3b82f6, #2563eb)"
+      },
+      "animation": "slide-in-right 0.3s ease",
+      "auto_dismiss": "3500ms"
+    },
+
+    "toggle_switch": {
+      "width": "44px", "height": "24px",
+      "thumb_size": "18px",
+      "off_color": "#cbd5e1",
+      "on_color":  "#14b8a6",
+      "transition": "0.3s"
+    }
+  },
+
+  "pages": {
+    "dashboard": {
+      "path": "/dashboard",
+      "is_main_page": true,
+      "note": "⭐ หน้าหลักหลัง Landing Page",
+      "layout": "two_column",
+      "sections": [
+        {
+          "id": "page_header",
+          "elements": ["page_title", "page_subtitle", "book_now_button"]
+        },
+        {
+          "id": "left_column",
+          "component": "calendar",
+          "card_title": "📅 ปฏิทิน"
+        },
+        {
+          "id": "right_column",
+          "component": "room_cards_list",
+          "card_title": "🏢 ห้องประชุม",
+          "badge": "X ว่าง"
+        },
+        {
+          "id": "today_bookings_table",
+          "component": "data_table",
+          "card_title": "📋 การจองวันนี้",
+          "visible_when": "bookings_today > 0"
+        }
+      ]
+    },
+
+    "my_bookings": {
+      "path": "/dashboard/bookings",
+      "layout": "single_column",
+      "sections": [
+        { "id": "filters",       "elements": ["room_select", "date_input", "clear_button"] },
+        { "id": "bookings_table","component": "data_table",  "columns": ["#", "ผู้จอง", "ห้อง", "วันที่", "เวลา", "วัตถุประสงค์", "สถานะ", "จัดการ"] }
+      ]
+    },
+
+    "analytics": {
+      "path": "/dashboard/analytics",
+      "layout": "single_column",
+      "sections": [
+        { "id": "stats_row",   "component": "stat_cards_grid", "cols": 4 },
+        { "id": "charts_row",  "layout": "two_column", "components": ["room_usage_bars", "peak_hours_bars"] }
+      ]
+    },
+
+    "settings": {
+      "path": "/dashboard/settings",
+      "layout": "two_column_2x2_grid",
+      "sections": [
+        { "id": "integrations",  "components": ["google_calendar_toggle", "line_notify_toggle"] },
+        { "id": "api_reference", "component": "endpoint_list" },
+        { "id": "data_model",    "component": "code_block" },
+        { "id": "rooms_list",    "component": "room_id_table" }
+      ]
+    }
+  },
+
+  "rooms": [
+    { "id": "r1", "name": "ห้องมณีจันทรา",             "capacity": 20,  "icon": "💎", "floor": "1" },
+    { "id": "r2", "name": "ห้องพระพุทธสัมฤทธิ์โกสีย์", "capacity": 20,  "icon": "🏛️", "floor": "1" },
+    { "id": "r3", "name": "ห้องชัยบุรี",               "capacity": 20,  "icon": "⚔️", "floor": "2" },
+    { "id": "r4", "name": "ห้องประชุมสารสนเทศ",         "capacity": 10,  "icon": "💻", "floor": "2" },
+    { "id": "r5", "name": "อาคารเอนกประสงค์",           "capacity": 200, "icon": "🏟️", "floor": "G" }
+  ],
+
+  "data_model": {
+    "booking": {
+      "id":        "string (auto-generated)",
+      "name":      "string",
+      "phone":     "string",
+      "roomId":    "string (ref: rooms.id)",
+      "date":      "YYYY-MM-DD",
+      "startTime": "HH:MM",
+      "endTime":   "HH:MM",
+      "purpose":   "string",
+      "status":    "confirmed | cancelled",
+      "createdAt": "ISO 8601 datetime"
+    }
+  },
+
+  "api_endpoints": [
+    { "method": "POST",   "path": "/api/booking",     "description": "สร้างการจองใหม่" },
+    { "method": "GET",    "path": "/api/booking",     "description": "ดึงรายการจองทั้งหมด" },
+    { "method": "GET",    "path": "/api/booking/:id", "description": "ดึงข้อมูลการจองเดี่ยว" },
+    { "method": "DELETE", "path": "/api/booking/:id", "description": "ยกเลิกการจอง" }
+  ],
+
+  "integrations": {
+    "google_calendar": {
+      "trigger_on_book":   "Create event (room + time + purpose)",
+      "trigger_on_cancel": "Delete event by event ID",
+      "toggleable": true
+    },
+    "line_notify": {
+      "trigger_on_book":   "ส่ง: 'มีการจองห้องประชุม: {room} เวลา {time}'",
+      "trigger_on_cancel": "ส่ง: 'ยกเลิกการจอง: {room} เวลา {time}'",
+      "toggleable": true
+    }
+  },
+
+  "business_rules": {
+    "max_booking_duration_hours": 4,
+    "prevent_double_booking": true,
+    "overlap_check": "same roomId + overlapping startTime/endTime",
+    "time_slot_interval_minutes": 30,
+    "available_hours": "07:00–20:00"
+  },
+
+  "tech_stack": {
+    "frontend":  "React + Tailwind CSS",
+    "backend":   "Node.js (Express) or Serverless",
+    "database":  "MongoDB or Firebase",
+    "fonts":     "Google Fonts — Prompt (display) + Sarabun (body)"
+  }
+}

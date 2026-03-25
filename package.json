@@ -1,0 +1,21 @@
+{
+  "name": "bankhlong-room-booking",
+  "version": "2.0.0",
+  "private": true,
+  "description": "ระบบจองห้องประชุม เทศบาลตำบลบ้านคลอง จ.พิษณุโลก",
+  "scripts": {
+    "dev:server": "cd server-sheets && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "cd client && npm install && npm run build",
+    "vercel-build": "cd client && npm install && npm run build",
+    "install:all": "cd server-sheets && npm install && cd ../client && npm install"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "googleapis": "^144.0.0",
+    "node-fetch": "^2.7.0"
+  }
+}

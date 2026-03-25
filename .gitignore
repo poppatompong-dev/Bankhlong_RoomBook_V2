@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server-sheets/node_modules/
+server/node_modules/
+
+# Build output
+client/dist/
+.vercel/
+
+# Environment & secrets
+.env
+server-sheets/.env
+*.json
+!package.json
+!package-lock.json
+!vercel.json
+!meeting-room-booking-canva-spec.json
+!tsconfig.json
+
+# Service account keys (NEVER commit)
+*-4ca0939fc1df.json
+bk-booking-room-*.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
