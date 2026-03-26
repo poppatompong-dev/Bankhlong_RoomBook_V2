@@ -1,4 +1,8 @@
+const dns = require('dns');
 const mongoose = require('mongoose');
+
+// Local router DNS often blocks SRV queries needed by MongoDB Atlas
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const connectDB = async () => {
   try {
