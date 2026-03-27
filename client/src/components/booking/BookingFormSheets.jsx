@@ -172,9 +172,10 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in"
-      onClick={e => e.target === e.currentTarget && onClose()}>
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-white rounded-3xl w-full max-w-[600px] max-h-[93vh] overflow-y-auto animate-slide-up"
-        style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.25)' }}>
+        style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.25)' }}
+        onMouseDown={e => e.stopPropagation()}>
 
         {/* Header */}
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-3xl">
@@ -388,7 +389,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
               <div>
                 <LBL>📎 เอกสาร / ไฟล์แนบ (ไม่บังคับ · สูงสุด {MAX_FILES} ไฟล์)</LBL>
                 <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center cursor-pointer transition-all hover:border-teal-300 hover:bg-teal-50/30"
-                  onClick={() => files.length < MAX_FILES && fileRef.current?.click()}>
+                  onClick={e => { e.stopPropagation(); files.length < MAX_FILES && fileRef.current?.click(); }}>
                   <input ref={fileRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden" onChange={handleFiles} />
                   <div className="text-2xl mb-1">📂</div>
                   <div className="text-xs text-gray-500" style={{ fontFamily: 'Sarabun, sans-serif' }}>คลิกเพื่อเลือกไฟล์ · รูปภาพ, PDF, Word, Excel (สูงสุด 5MB/ไฟล์)</div>
@@ -434,17 +435,17 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
 
         {/* Footer */}
         <div className="px-6 py-4 flex gap-3 justify-end border-t border-gray-100">
-          <button className="btn-secondary" onClick={onClose}>ยกเลิก</button>
-          {step > 1 && <button className="btn-secondary" onClick={() => setStep(s => s - 1)}>← ย้อนกลับ</button>}
+          <button type="button" className="btn-secondary" onClick={onClose}>ยกเลิก</button>
+          {step > 1 && <button type="button" className="btn-secondary" onClick={() => setStep(s => s - 1)}>← ย้อนกลับ</button>}
           {step < 3 && (
-            <button className="btn-primary" onClick={() => {
+            <button type="button" className="btn-primary" onClick={() => {
               if (step === 1 && !validate1()) return;
               if (step === 2 && !validate2()) return;
               setStep(s => s + 1);
             }}>ถัดไป →</button>
           )}
           {step === 3 && (
-            <button className="btn-primary btn-lg" onClick={submit} disabled={loading || !canSubmit}>
+            <button type="button" className="btn-primary btn-lg" onClick={submit} disabled={loading || !canSubmit}>
               {loading ? <><span className="loader" />&nbsp;กำลังส่ง...</> : '📨 ส่งคำขอจอง'}
             </button>
           )}
