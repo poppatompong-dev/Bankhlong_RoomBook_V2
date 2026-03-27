@@ -40,37 +40,76 @@ function StatusDot({ status }) {
   );
 }
 
+const LAYOUT_LABELS = { classroom: 'ห้องเรียน', conference: 'ประชุมกลุ่ม', ushape: 'ยู-เชฟ', theater: 'เธียเตอร์', banquet: 'แบงควิต', other: 'อื่นๆ' };
+const EQUIP_MAP = { sound: 'เครื่องเสียง', projector: 'โปรเจคเตอร์', tv: 'จอทีวี', laptop: 'โน้ตบุ๊ก', whiteboard: 'ไวท์บอร์ด', flipchart: 'ฟลิปชาร์ต', videoConference: 'วิดีโอคอน', internet: 'อินเทอร์เน็ต' };
+const SVC_MAP = { water: 'น้ำดื่ม', coffee: 'กาแฟ/ของว่าง', nameCards: 'ป้ายชื่อ', signage: 'ป้ายไวนิล' };
+
 // ─── View Booking Modal ────────────────────────────────────────────────────────
 function ViewModal({ booking, rooms, onClose }) {
   const room = rooms.find(r => r.name === booking.room);
+  const eq = booking.equipment || {};
+  const svc = booking.additionalServices || {};
+  const eqList = Object.entries(EQUIP_MAP).filter(([k]) => eq[k]).map(([, v]) => v);
+  const svcList = Object.entries(SVC_MAP).filter(([k]) => svc[k]).map(([, v]) => v);
+
+  const Row = ({ label, value }) => value ? (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      <div style={{ width: 130, flexShrink: 0, fontSize: 12, color: '#64748b', fontFamily: 'Sarabun,sans-serif' }}>{label}</div>
+      <div style={{ flex: 1, fontSize: 13, color: '#1e293b', fontFamily: 'Sarabun,sans-serif', fontWeight: 600 }}>{value}</div>
+    </div>
+  ) : null;
+
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-      <div className="bg-white rounded-2xl w-full max-w-md" style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.25)' }}>
-        <div style={{ background: 'linear-gradient(135deg,#0d9488,#14b8a6)', borderRadius: '16px 16px 0 0', padding: '20px 24px' }}>
+      <div className="bg-white rounded-2xl w-full max-w-lg" style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ background: 'linear-gradient(135deg,#0d9488,#14b8a6)', borderRadius: '16px 16px 0 0', padding: '20px 24px', position: 'sticky', top: 0, zIndex: 10 }}>
           <div className="flex items-center justify-between">
             <div style={{ color: 'white', fontFamily: 'Prompt,sans-serif', fontWeight: 700, fontSize: 16 }}>📋 รายละเอียดการจอง</div>
             <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 8, color: 'white', cursor: 'pointer', padding: '4px 8px', fontSize: 16 }}>✕</button>
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, fontFamily: 'Sarabun,sans-serif', marginTop: 4 }}>ID: {booking.id}</div>
         </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[
-            { label: '👤 ผู้จอง', value: booking.name },
-            { label: '📞 เบอร์โทร', value: booking.phone },
-            { label: '🏢 ห้อง', value: `${room?.icon || ''} ${booking.room}` },
-            { label: '📅 วันที่', value: formatDateTH(booking.date) },
-            { label: '⏰ เวลา', value: `${booking.startTime} – ${booking.endTime} น.` },
-            { label: '📝 วัตถุประสงค์', value: booking.purpose },
-          ].map(row => (
-            <div key={row.label} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{ width: 130, flexShrink: 0, fontSize: 12, color: '#64748b', fontFamily: 'Sarabun,sans-serif' }}>{row.label}</div>
-              <div style={{ flex: 1, fontSize: 13, color: '#1e293b', fontFamily: 'Sarabun,sans-serif', fontWeight: 600 }}>{row.value}</div>
-            </div>
-          ))}
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 11 }}>
+          {/* ผู้จอง */}
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'Sarabun,sans-serif', marginBottom: 2 }}>ผู้จอง</div>
+          <Row label="👤 ชื่อ-นามสกุล" value={booking.name} />
+          <Row label="📞 เบอร์โทร" value={booking.phone} />
+          <Row label="🏢 หน่วยงาน" value={booking.dept} />
+          {/* ห้อง/เวลา */}
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'Sarabun,sans-serif', marginTop: 6, marginBottom: 2 }}>ห้องประชุม</div>
+          <Row label="🚪 ห้อง" value={`${room?.icon || booking.roomIcon || ''} ${booking.room}`} />
+          <Row label="📅 วันที่" value={formatDateTH(booking.date)} />
+          <Row label="⏰ เวลา" value={`${booking.startTime} – ${booking.endTime} น.`} />
+          <Row label="� ผู้เข้าร่วม" value={booking.attendees > 0 ? `${booking.attendees} คน` : null} />
+          <Row label="🪑 รูปแบบห้อง" value={booking.roomLayout ? LAYOUT_LABELS[booking.roomLayout] || booking.roomLayout : null} />
+          <Row label="⏱️ เตรียมก่อน" value={booking.setupBefore > 0 ? `${booking.setupBefore} นาที` : null} />
+          <Row label="🧹 เก็บกวาดหลัง" value={booking.cleanupAfter > 0 ? `${booking.cleanupAfter} นาที` : null} />
+          {/* กิจกรรม */}
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'Sarabun,sans-serif', marginTop: 6, marginBottom: 2 }}>กิจกรรม</div>
+          <Row label="📝 วัตถุประสงค์" value={booking.purpose} />
+          <Row label="🎯 ชื่อกิจกรรม" value={booking.activity} />
+          <Row label="👗 การแต่งกาย" value={booking.dressCode} />
+          <Row label="⚠️ ข้อห้าม" value={booking.restrictions} />
+          {/* อุปกรณ์ */}
+          {eqList.length > 0 && (
+            <Row label="🔧 อุปกรณ์" value={eqList.join(', ')} />
+          )}
+          {eq.sound && eq.micCount > 0 && (
+            <Row label="🎤 ไมโครโฟน" value={`${eq.micCount} ตัว${eq.micType ? ` (${eq.micType})` : ''}`} />
+          )}
+          {eq.other && <Row label="🔧 อุปกรณ์อื่นๆ" value={eq.other} />}
+          {/* บริการ */}
+          {svcList.length > 0 && (
+            <Row label="🛎️ บริการเพิ่มเติม" value={svcList.join(', ')} />
+          )}
+          {svc.water && svc.waterTime && <Row label="⏰ เสิร์ฟ" value={svc.waterTime} />}
+          {svc.extraArea && <Row label="📍 พื้นที่เพิ่ม" value={svc.extraArea} />}
+          {/* สถานะ */}
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'Sarabun,sans-serif', marginTop: 6, marginBottom: 2 }}>สถานะ</div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <div style={{ width: 130, flexShrink: 0, fontSize: 12, color: '#64748b', fontFamily: 'Sarabun,sans-serif' }}>📌 สถานะ</div>
             <StatusDot status={booking.status} />
           </div>
+          {booking.adminNote && <Row label="💬 หมายเหตุแอดมิน" value={booking.adminNote} />}
         </div>
         <div style={{ padding: '0 24px 20px' }}>
           <button onClick={onClose} className="btn-primary w-full" style={{ fontFamily: 'Sarabun,sans-serif' }}>ปิด</button>

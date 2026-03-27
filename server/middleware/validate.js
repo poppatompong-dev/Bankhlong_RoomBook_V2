@@ -14,7 +14,6 @@ const handleValidation = (req, res, next) => {
 
 // Booking validation rules
 const bookingRules = [
-  body('roomId').notEmpty().withMessage('กรุณาเลือกห้องประชุม'),
   body('date')
     .notEmpty().withMessage('กรุณาระบุวันที่')
     .matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('รูปแบบวันที่ไม่ถูกต้อง'),
@@ -34,7 +33,7 @@ const bookingRules = [
       const [eh, em] = req.body.endTime.split(':').map(Number);
       const duration = (eh * 60 + em) - (sh * 60 + sm);
       if (duration <= 0) throw new Error('เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม');
-      if (duration > 240) throw new Error('ระยะเวลาจองสูงสุด 4 ชั่วโมง');
+      if (duration > 480) throw new Error('ระยะเวลาจองสูงสุด 8 ชั่วโมง');
     }
     return true;
   })

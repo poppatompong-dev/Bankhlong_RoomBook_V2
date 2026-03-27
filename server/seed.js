@@ -43,6 +43,23 @@ async function seed() {
       console.log('ℹ️ Admin user already exists');
     }
 
+    // Create jeng admin (bypass minlength validation, password still hashed via pre-save)
+    const existingJeng = await User.findOne({ $or: [{ email: 'jeng@meeting.com' }, { username: 'jeng' }] });
+    if (!existingJeng) {
+      const jengUser = new User({
+        name: 'เจง ผู้ดูแลระบบ',
+        email: 'jeng@meeting.com',
+        username: 'jeng',
+        password: 'jeng',
+        phone: '000-000-0001',
+        role: 'admin'
+      });
+      await jengUser.save({ validateBeforeSave: false });
+      console.log('✅ Created jeng admin (jeng / jeng  OR  jeng@meeting.com / jeng)');
+    } else {
+      console.log('ℹ️ Jeng admin already exists');
+    }
+
     // Create demo user
     const existingUser = await User.findOne({ email: 'user@meeting.com' });
     if (!existingUser) {
