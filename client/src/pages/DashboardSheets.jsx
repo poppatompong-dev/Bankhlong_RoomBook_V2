@@ -112,6 +112,58 @@ function Toast({ toast }) {
   );
 }
 
+const GCAL_EMBED_URL =
+  'https://calendar.google.com/calendar/embed' +
+  '?src=cvq6279kfec56nnmsa90sq16vc%40group.calendar.google.com' +
+  '&ctz=Asia%2FBangkok' +
+  '&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=0&showTz=1' +
+  '&hl=th&mode=MONTH';
+
+// ─── Google Calendar Embed Panel ──────────────────────────────────────────────
+function GoogleCalendarPanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-6 card overflow-hidden">
+      <div className="card-header cursor-pointer select-none" onClick={() => setOpen(o => !o)}
+        style={{ userSelect: 'none' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-lg">📅</span>
+          <div className="card-title">ปฏิทิน Google Calendar</div>
+          <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+            style={{ background: '#dbeafe', color: '#1d4ed8', fontFamily: 'Sarabun, sans-serif' }}>
+            ปฏิทินกลาง
+          </span>
+        </div>
+        <button className="border-none cursor-pointer text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 rounded-lg"
+          style={{ background: 'transparent', fontSize: 18 }}
+          aria-label={open ? 'ซ่อนปฏิทิน' : 'แสดงปฏิทิน'}>
+          {open ? '▲' : '▼'}
+        </button>
+      </div>
+      {open && (
+        <div className="animate-fade-in" style={{ padding: '0 0 0 0' }}>
+          <div className="px-4 pb-2 text-xs text-gray-400" style={{ fontFamily: 'Sarabun, sans-serif' }}>
+            แสดงการจองทั้งหมดที่อนุมัติแล้วบน Google Calendar — อัปเดตอัตโนมัติเมื่อมีการจอง/ยกเลิก
+          </div>
+          <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', minHeight: 480 }}>
+            <iframe
+              src={GCAL_EMBED_URL}
+              title="ปฏิทินห้องประชุม เทศบาลตำบลบ้านคลอง"
+              frameBorder="0"
+              scrolling="no"
+              style={{
+                position: 'absolute', top: 0, left: 0,
+                width: '100%', height: '100%',
+                border: 'none', borderRadius: '0 0 16px 16px'
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE — จองห้องประชุม (user-facing only)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -246,6 +298,9 @@ function BookingPage({ rooms, allBookings, loading, selectedDate, setSelectedDat
           </div>
         </div>
       </div>
+
+      {/* ─── Google Calendar Embed ─── */}
+      <GoogleCalendarPanel />
 
       {/* Booking modal */}
       {showForm && (

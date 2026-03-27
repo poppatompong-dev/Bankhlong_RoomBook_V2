@@ -6,6 +6,7 @@ const { auth } = require('../middleware/auth');
 const { bookingRules, handleValidation } = require('../middleware/validate');
 const { bookingLimiter } = require('../middleware/rateLimit');
 const lineNotify = require('../services/lineNotify');
+const googleCalendar = require('../services/googleCalendar');
 
 // ─── Helper: normalize booking doc → flat object for frontend ────────────────
 function normalizeBooking(b) {
@@ -125,7 +126,14 @@ router.post('/', bookingLimiter, bookingRules, handleValidation, async (req, res
       status: 'pending'
     });
 
-    await booking.populate('roomId', 'name icon capacity floor');
+    await booking.populate('roomId', 'name icon capacity floor location');
+
+    // สร้าง Google Calendar event (status=pending → จะ update อีกครั้งตอน approve)
+    const gcalResult = await googleCalendar.createEvent(booking, roomDoc);
+    if (gcalResult.eventId) {
+      booking.googleEventId = gcalResult.eventId;
+      await booking.save();
+    }
 
     lineNotify.notifyBookingCreated(booking, roomDoc, { name: bookerName });
 
@@ -189,7 +197,24 @@ router.put('/:id', auth, async (req, res) => {
       }
 
       await booking.save();
-      await booking.populate('roomId', 'name icon capacity floor');
+      await booking.populate('roomId', 'name icon capacity floor location');
+
+      // Google Calendar: อัปเดต หรือ ลบ event ตามสถานะ
+      if (booking.status === 'cancelled') {
+        if (booking.googleEventId) {
+          await googleCalendar.deleteEvent(booking.googleEventId);
+          booking.googleEventId = null;
+          await booking.save();
+        }
+      } else {
+        if (booking.googleEventId) {
+          await googleCalendar.updateEvent(booking.googleEventId, booking, booking.roomId);
+        } else {
+          const gcal = await googleCalendar.createEvent(booking, booking.roomId);
+          if (gcal.eventId) { booking.googleEventId = gcal.eventId; await booking.save(); }
+        }
+      }
+
       const io = req.app.get('io');
       if (io) io.emit('booking:updated', normalizeBooking(booking));
       return res.json({ ok: true, message: 'อัปเดตการจองสำเร็จ', booking: normalizeBooking(booking) });
@@ -199,6 +224,10 @@ router.put('/:id', auth, async (req, res) => {
     if (isOwner && status === 'cancelled') {
       booking.status = 'cancelled';
       booking.cancelledBy = req.user._id;
+      if (booking.googleEventId) {
+        await googleCalendar.deleteEvent(booking.googleEventId);
+        booking.googleEventId = null;
+      }
       await booking.save();
       return res.json({ ok: true, message: 'ยกเลิกการจองสำเร็จ' });
     }
@@ -219,6 +248,10 @@ router.delete('/:id', auth, async (req, res) => {
     if (!isAdmin && !isOwner) return res.status(403).json({ ok: false, message: 'คุณไม่มีสิทธิ์' });
     booking.status = 'cancelled';
     booking.cancelledBy = req.user._id;
+    if (booking.googleEventId) {
+      await googleCalendar.deleteEvent(booking.googleEventId);
+      booking.googleEventId = null;
+    }
     await booking.save();
     const io = req.app.get('io');
     if (io) io.emit('booking:cancelled', { id: booking._id });
