@@ -104,7 +104,7 @@ router.get('/:id/availability', auth, async (req, res) => {
     const bookings = await Booking.find({
       roomId: room._id,
       date,
-      status: { $in: ['pending', 'approved'] }
+      status: { $in: ['confirmed', 'pending', 'approved'] }
     }).select('startTime endTime status');
 
     const TIME_SLOTS = [

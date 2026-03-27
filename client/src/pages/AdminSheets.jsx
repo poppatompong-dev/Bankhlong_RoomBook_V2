@@ -27,8 +27,10 @@ function Toggle({ enabled, onChange }) {
 
 // ─── Status color dot ──────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  confirmed: { dot: '#22c55e', bg: '#dcf5e7', text: '#15803d', label: 'ยืนยัน' },
-  cancelled: { dot: '#ef4444', bg: '#fee2e2', text: '#b91c1c', label: 'ยกเลิก' },
+  confirmed: { dot: '#22c55e', bg: '#dcf5e7', text: '#15803d', label: '✅ ยืนยันแล้ว' },
+  cancelled: { dot: '#ef4444', bg: '#fee2e2', text: '#b91c1c', label: '❌ ยกเลิก' },
+  pending: { dot: '#f59e0b', bg: '#fef3c7', text: '#92400e', label: '⏳ รออนุมัติ' },
+  approved: { dot: '#3b82f6', bg: '#dbeafe', text: '#1d4ed8', label: '👍 อนุมัติ' },
 };
 function StatusDot({ status }) {
   const cfg = STATUS_CFG[status] || { dot: '#94a3b8', bg: '#f1f5f9', text: '#64748b', label: status };
@@ -1208,6 +1210,134 @@ function TabUsers() {
   );
 }
 
+// ─── Tab: Audit Log ──────────────────────────────────────────────────────────
+const ACTION_CFG = {
+  'booking.created': { icon: '✅', bg: '#dcf5e7', text: '#15803d', label: 'สร้างการจอง' },
+  'booking.updated': { icon: '✏️', bg: '#dbeafe', text: '#1d4ed8', label: 'แก้ไขการจอง' },
+  'booking.cancelled': { icon: '🚫', bg: '#fef3c7', text: '#92400e', label: 'ยกเลิกการจอง' },
+  'booking.deleted': { icon: '🗑️', bg: '#fee2e2', text: '#b91c1c', label: 'ลบการจอง' },
+};
+
+function TabAuditLog() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filterAction, setFilterAction] = useState('');
+  const [total, setTotal] = useState(0);
+
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      const params = filterAction ? `?action=${filterAction}` : '';
+      const res = await api.get(`/audit-logs${params}`);
+      setLogs(res.data.logs || []);
+      setTotal(res.data.total || 0);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchLogs(); }, [filterAction]);
+
+  const fmtDate = (iso) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    return d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' }) +
+      ' ' + d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  return (
+    <div className="animate-fade-in">
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
+        <div>
+          <h1 className="font-bold text-[20px] text-gray-800" style={{ fontFamily: 'Prompt,sans-serif' }}>🗒️ Audit Log</h1>
+          <p className="text-sm text-gray-500 mt-0.5" style={{ fontFamily: 'Sarabun,sans-serif' }}>บันทึกทุก action ในระบบ · {total} รายการ</p>
+        </div>
+        <button onClick={fetchLogs}
+          style={{ padding: '8px 16px', borderRadius: 10, border: '1.5px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: 13, fontFamily: 'Sarabun,sans-serif', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
+          🔄 รีเฟรช
+        </button>
+      </div>
+
+      {/* Filter */}
+      <div className="card mb-4">
+        <div className="card-body py-3">
+          <div className="flex flex-wrap gap-2">
+            {[{ v: '', l: 'ทั้งหมด' }, { v: 'booking.created', l: '✅ สร้าง' }, { v: 'booking.updated', l: '✏️ แก้ไข' }, { v: 'booking.cancelled', l: '🚫 ยกเลิก' }, { v: 'booking.deleted', l: '🗑️ ลบ' }].map(f => (
+              <button key={f.v} onClick={() => setFilterAction(f.v)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer"
+                style={{ background: filterAction === f.v ? '#14b8a6' : '#f1f5f9', color: filterAction === f.v ? 'white' : '#334155', fontFamily: 'Sarabun,sans-serif' }}>
+                {f.l}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="card">
+        <div className="card-header">
+          <div className="card-title">รายการ Audit Log</div>
+          <span className="badge badge-info" style={{ fontFamily: 'Sarabun,sans-serif' }}>{logs.length} รายการล่าสุด</span>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="loader border-teal-500 border-t-white" style={{ width: 32, height: 32, borderWidth: 3 }} />
+          </div>
+        ) : logs.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <div className="text-5xl mb-3">📋</div>
+            <div className="text-sm" style={{ fontFamily: 'Sarabun,sans-serif' }}>ยังไม่มีประวัติการดำเนินการ</div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  {['#', 'Action', 'ผู้ดำเนินการ', 'รายละเอียด', 'IP', 'เวลา'].map(h => (
+                    <th key={h} className="text-left px-4 py-3 border-b"
+                      style={{ background: '#f8fafc', color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'Sarabun,sans-serif', whiteSpace: 'nowrap' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log, i) => {
+                  const cfg = ACTION_CFG[log.action] || { icon: '📝', bg: '#f1f5f9', text: '#334155', label: log.action };
+                  const detail = log.detail || {};
+                  return (
+                    <tr key={log._id}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseLeave={e => e.currentTarget.style.background = ''}>
+                      <td className="px-4 py-3 text-xs text-gray-400">{i + 1}</td>
+                      <td className="px-4 py-3">
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 20, background: cfg.bg, color: cfg.text, fontSize: 11, fontWeight: 700, fontFamily: 'Sarabun,sans-serif', whiteSpace: 'nowrap' }}>
+                          {cfg.icon} {cfg.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-800" style={{ fontFamily: 'Sarabun,sans-serif' }}>
+                        {log.performedBy || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-600" style={{ fontFamily: 'Sarabun,sans-serif', maxWidth: 260 }}>
+                        {detail.room && <span>🚪 {detail.room}</span>}
+                        {detail.date && <span> · 📅 {detail.date}</span>}
+                        {detail.status && <span> · สถานะ: {detail.status}</span>}
+                        {detail.reason && <span> · {detail.reason}</span>}
+                        {!detail.room && !detail.status && !detail.reason && <span className="text-gray-400">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-mono text-gray-400">{log.ip || '—'}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500" style={{ fontFamily: 'Sarabun,sans-serif', whiteSpace: 'nowrap' }}>{fmtDate(log.createdAt)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Admin Shell ──────────────────────────────────────────────────────────
 export default function AdminSheets() {
   const navigate = useNavigate();
@@ -1318,9 +1448,10 @@ export default function AdminSheets() {
 
   // ─── Admin Shell ────────────────────────────────────────────────────────────
   const tabs = [
-    { id: 'bookings', icon: '�', label: 'จัดการจอง' },
+    { id: 'bookings', icon: '📋', label: 'จัดการจอง' },
     { id: 'rooms', icon: '🏢', label: 'จัดการห้อง' },
     { id: 'analytics', icon: '📊', label: 'สถิติ' },
+    { id: 'auditlog', icon: '🗒️', label: 'Audit Log' },
     { id: 'users', icon: '👥', label: 'จัดการผู้ใช้' },
     { id: 'settings', icon: '⚙️', label: 'การตั้งค่า' },
   ];
@@ -1397,6 +1528,7 @@ export default function AdminSheets() {
         {activeTab === 'bookings' && <TabBookings bookings={bookings} rooms={rooms} loading={loading} onRefresh={fetchData} showToast={showToast} />}
         {activeTab === 'rooms' && <TabRooms rooms={rooms} onRefreshRooms={fetchData} showToast={showToast} />}
         {activeTab === 'analytics' && <TabAnalytics rooms={rooms} bookings={bookings} loading={loading} />}
+        {activeTab === 'auditlog' && <TabAuditLog />}
         {activeTab === 'users' && <TabUsers />}
         {activeTab === 'settings' && <TabSettings rooms={rooms} />}
       </main>

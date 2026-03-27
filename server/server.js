@@ -40,6 +40,7 @@ if (process.env.NODE_ENV === 'production') {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/rooms', require('./routes/rooms'));
 app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/audit-logs', require('./routes/auditLogs'));
 
 // Health check
 app.get('/api/health', (req, res) => {

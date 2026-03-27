@@ -48,7 +48,7 @@ class LineNotifyService {
 
   // Pre-built notification templates (Thai)
   async notifyBookingCreated(booking, room, user) {
-    const msg = `\n🏢 มีการจองห้องประชุมใหม่\n📋 ห้อง: ${room.name}\n👤 ผู้จอง: ${user.name}\n📅 วันที่: ${booking.date}\n⏰ เวลา: ${booking.startTime} - ${booking.endTime}\n📝 วัตถุประสงค์: ${booking.purpose}\n🔄 สถานะ: รอการอนุมัติ`;
+    const msg = `\n✅ จองห้องประชุมสำเร็จ! มีผลทันที\n📋 ห้อง: ${room.name}\n👤 ผู้จอง: ${user.name}\n📅 วันที่: ${booking.date}\n⏰ เวลา: ${booking.startTime} - ${booking.endTime}\n📝 วัตถุประสงค์: ${booking.purpose}\n� สถานะ: ยืนยันแล้ว`;
     return this.send(msg);
   }
 

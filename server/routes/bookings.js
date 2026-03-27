@@ -7,6 +7,7 @@ const { bookingRules, handleValidation } = require('../middleware/validate');
 const { bookingLimiter } = require('../middleware/rateLimit');
 const lineNotify = require('../services/lineNotify');
 const googleCalendar = require('../services/googleCalendar');
+const AuditLog = require('../models/AuditLog');
 
 // ─── Helper: normalize booking doc → flat object for frontend ────────────────
 function normalizeBooking(b) {
@@ -123,12 +124,12 @@ router.post('/', bookingLimiter, bookingRules, handleValidation, async (req, res
       additionalServices: additionalServices || {},
       dressCode: dressCode || '',
       restrictions: restrictions || '',
-      status: 'pending'
+      status: 'confirmed'
     });
 
     await booking.populate('roomId', 'name icon capacity floor location');
 
-    // สร้าง Google Calendar event (status=pending → จะ update อีกครั้งตอน approve)
+    // สร้าง Google Calendar event ทันทีที่จองสำเร็จ (status=confirmed)
     const gcalResult = await googleCalendar.createEvent(booking, roomDoc);
     if (gcalResult.eventId) {
       booking.googleEventId = gcalResult.eventId;
@@ -137,10 +138,19 @@ router.post('/', bookingLimiter, bookingRules, handleValidation, async (req, res
 
     lineNotify.notifyBookingCreated(booking, roomDoc, { name: bookerName });
 
+    // Audit log
+    AuditLog.create({
+      action: 'booking.created',
+      bookingId: booking._id,
+      performedBy: bookerName,
+      ip: req.ip || req.headers['x-forwarded-for'] || '',
+      detail: { room: roomDoc.name, date, startTime, endTime, purpose: purpose?.trim() }
+    }).catch(() => { });
+
     const io = req.app.get('io');
     if (io) io.emit('booking:created', normalizeBooking(booking));
 
-    res.status(201).json({ ok: true, message: 'จองห้องประชุมสำเร็จ รอการอนุมัติ', booking: normalizeBooking(booking) });
+    res.status(201).json({ ok: true, message: '✅ จองห้องประชุมสำเร็จ! มีผลทันที', booking: normalizeBooking(booking) });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }
@@ -215,6 +225,16 @@ router.put('/:id', auth, async (req, res) => {
         }
       }
 
+      // Audit log
+      AuditLog.create({
+        action: 'booking.updated',
+        bookingId: booking._id,
+        performedBy: req.user.name || req.user.email,
+        userId: req.user._id,
+        ip: req.ip || req.headers['x-forwarded-for'] || '',
+        detail: { status: booking.status, changes: req.body }
+      }).catch(() => { });
+
       const io = req.app.get('io');
       if (io) io.emit('booking:updated', normalizeBooking(booking));
       return res.json({ ok: true, message: 'อัปเดตการจองสำเร็จ', booking: normalizeBooking(booking) });
@@ -229,10 +249,51 @@ router.put('/:id', auth, async (req, res) => {
         booking.googleEventId = null;
       }
       await booking.save();
+      AuditLog.create({
+        action: 'booking.cancelled',
+        bookingId: booking._id,
+        performedBy: req.user.name || req.user.email,
+        userId: req.user._id,
+        ip: req.ip || req.headers['x-forwarded-for'] || '',
+        detail: { reason: 'user_cancelled' }
+      }).catch(() => { });
       return res.json({ ok: true, message: 'ยกเลิกการจองสำเร็จ' });
     }
 
     return res.status(403).json({ ok: false, message: 'คุณไม่มีสิทธิ์แก้ไขการจองนี้' });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
+// PATCH /api/bookings/:id/cancel — Admin: ยกเลิกการจอง
+router.patch('/:id/cancel', auth, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate('roomId', 'name icon');
+    if (!booking) return res.status(404).json({ ok: false, message: 'ไม่พบการจอง' });
+    if (req.user.role !== 'admin') return res.status(403).json({ ok: false, message: 'เฉพาะ Admin เท่านั้น' });
+    if (booking.status === 'cancelled') return res.status(400).json({ ok: false, message: 'ยกเลิกไปแล้ว' });
+
+    booking.status = 'cancelled';
+    booking.cancelledBy = req.user._id;
+    if (booking.googleEventId) {
+      await googleCalendar.deleteEvent(booking.googleEventId);
+      booking.googleEventId = null;
+    }
+    await booking.save();
+
+    AuditLog.create({
+      action: 'booking.cancelled',
+      bookingId: booking._id,
+      performedBy: req.user.name || req.user.email,
+      userId: req.user._id,
+      ip: req.ip || req.headers['x-forwarded-for'] || '',
+      detail: { reason: 'admin_cancelled', room: booking.roomId?.name, date: booking.date }
+    }).catch(() => { });
+
+    const io = req.app.get('io');
+    if (io) io.emit('booking:updated', normalizeBooking(booking));
+    res.json({ ok: true, message: 'ยกเลิกการจองสำเร็จ', booking: normalizeBooking(booking) });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }
@@ -253,6 +314,14 @@ router.delete('/:id', auth, async (req, res) => {
       booking.googleEventId = null;
     }
     await booking.save();
+    AuditLog.create({
+      action: 'booking.deleted',
+      bookingId: booking._id,
+      performedBy: req.user.name || req.user.email,
+      userId: req.user._id,
+      ip: req.ip || req.headers['x-forwarded-for'] || '',
+      detail: { deletedBy: 'admin' }
+    }).catch(() => { });
     const io = req.app.get('io');
     if (io) io.emit('booking:cancelled', { id: booking._id });
     res.json({ ok: true, message: 'ยกเลิกการจองสำเร็จ' });
