@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { formatDateTH, today } from '../utils/helpers';
+import logo from '../assets/logo.png';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -22,9 +23,9 @@ export default function Landing() {
       {/* Header bar */}
       <header className="relative z-10 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto w-full">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl"
-            style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.35)' }}>
-            �️
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center p-1"
+            style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.35)' }}>
+            <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div className="text-white">
             <div className="font-bold text-base leading-tight" style={{ fontFamily: 'Prompt, sans-serif' }}>เทศบาลตำบลบ้านคลอง</div>

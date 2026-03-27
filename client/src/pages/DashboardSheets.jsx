@@ -4,6 +4,7 @@ import axios from 'axios';
 import Calendar from '../components/calendar/Calendar';
 import BookingFormSheets from '../components/booking/BookingFormSheets';
 import { formatDateTH, today } from '../utils/helpers';
+import logo from '../assets/logo.png';
 
 const api = axios.create({ baseURL: '/api' });
 
@@ -16,7 +17,7 @@ function Watermark() {
           <pattern id="wm" x="0" y="0" width="320" height="320" patternUnits="userSpaceOnUse" patternTransform="rotate(-15)">
             <text x="10" y="40" fill="#0d9488" fontSize="16" fontFamily="Prompt,sans-serif" fontWeight="700">เทศบาลตำบลบ้านคลอง</text>
             <text x="30" y="70" fill="#0d9488" fontSize="12" fontFamily="Sarabun,sans-serif">ระบบจองห้องประชุม</text>
-            <text x="160" y="160" fill="#0d9488" fontSize="42" fontFamily="serif">🏛️</text>
+            <text x="120" y="170" fill="#0d9488" fontSize="13" fontFamily="Sarabun,sans-serif">🏛 บ้านคลอง</text>
             <text x="50" y="220" fill="#14b8a6" fontSize="14" fontFamily="Prompt,sans-serif" fontWeight="600">จ.พิษณุโลก</text>
             <text x="10" y="260" fill="#14b8a6" fontSize="11" fontFamily="Sarabun,sans-serif">Meeting Room Booking</text>
           </pattern>
@@ -70,9 +71,9 @@ function DashHeader({ navigate }) {
         <div className="flex items-center justify-between" style={{ height: 72 }}>
           {/* Logo */}
           <button onClick={() => navigate('/')} className="flex items-center gap-3 cursor-pointer bg-transparent border-none text-white flex-shrink-0">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
-              style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)' }}>
-              🏛️
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center p-1 flex-shrink-0"
+              style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)' }}>
+              <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div className="text-left hidden sm:block">
               <div className="font-bold text-[18px] leading-tight" style={{ fontFamily: 'Prompt, sans-serif' }}>เทศบาลตำบลบ้านคลอง</div>

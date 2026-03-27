@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 // Toggle: 'sheets' = Google Sheets backend (port 5001)
 //         'mongo'  = MongoDB backend (port 5000)
-const BACKEND = 'sheets';
+const BACKEND = 'mongo';
 
 const backendPort = BACKEND === 'sheets' ? 5001 : 5000;
 const backendUrl = `http://localhost:${backendPort}`;

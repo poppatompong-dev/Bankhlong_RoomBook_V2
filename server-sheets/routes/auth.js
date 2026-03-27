@@ -11,7 +11,7 @@ const crypto = require('crypto');
 
 // ─── Admin credentials (from .env) ──────────────────────────────────────────
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'password123';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 const USERS = [
   { id: 'u1', name: 'ผู้ดูแลระบบ', username: ADMIN_USERNAME, email: `${ADMIN_USERNAME}@meeting.local`, password: ADMIN_PASSWORD, role: 'admin' }

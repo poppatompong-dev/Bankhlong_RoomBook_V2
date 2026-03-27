@@ -1,9 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import logo from '../assets/logo.png';
 import { formatDateTH, getStatusBadge } from '../utils/helpers';
 
 const api = axios.create({ baseURL: '/api' });
+api.interceptors.request.use(cfg => {
+  const token = sessionStorage.getItem('admin_token');
+  if (token) cfg.headers.Authorization = `Bearer ${token}`;
+  return cfg;
+});
 
 // ─── Toggle Switch ─────────────────────────────────────────────────────────────
 function Toggle({ enabled, onChange }) {
@@ -1167,7 +1173,7 @@ function TabUsers() {
 export default function AdminSheets() {
   const navigate = useNavigate();
   const [authed, setAuthed] = useState(() => !!sessionStorage.getItem('admin_token'));
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginForm, setLoginForm] = useState({ login: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('bookings');
@@ -1204,8 +1210,10 @@ export default function AdminSheets() {
     setLoginLoading(true);
     try {
       const res = await api.post('/auth/login', loginForm);
-      if (res.data.ok && res.data.user?.role === 'admin') {
-        sessionStorage.setItem('admin_token', res.data.token);
+      const user = res.data.user;
+      const token = res.data.token;
+      if (token && user?.role === 'admin') {
+        sessionStorage.setItem('admin_token', token);
         setAuthed(true);
       } else { setLoginError('ไม่มีสิทธิ์เข้าถึงหน้านี้'); }
     } catch (err) { setLoginError(err.response?.data?.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); }
@@ -1225,9 +1233,9 @@ export default function AdminSheets() {
         style={{ background: 'linear-gradient(135deg, #f0faf4 0%, #f0fdf9 50%, #ffffff 100%)' }}>
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl"
-              style={{ background: 'linear-gradient(135deg, #14b8a6, #0d9488)', boxShadow: '0 4px 15px rgba(20,184,166,0.3)' }}>
-              🏛️
+            <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center p-1.5"
+              style={{ background: 'white', boxShadow: '0 4px 15px rgba(20,184,166,0.3)', border: '2px solid #14b8a6' }}>
+              <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <h1 className="font-bold text-2xl text-gray-800" style={{ fontFamily: 'Prompt, sans-serif' }}>ผู้ดูแลระบบ</h1>
             <p className="text-gray-400 text-sm mt-1" style={{ fontFamily: 'Sarabun, sans-serif' }}>เทศบาลตำบลบ้านคลอง · ระบบจัดการห้องประชุม</p>
@@ -1242,8 +1250,8 @@ export default function AdminSheets() {
               <form onSubmit={handleLogin}>
                 <div className="mb-4">
                   <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Username</label>
-                  <input type="text" className="form-control" placeholder="admin" required
-                    value={loginForm.username} onChange={e => setLoginForm(p => ({ ...p, username: e.target.value }))} />
+                  <input type="text" className="form-control" placeholder="admin@meeting.com" required
+                    value={loginForm.login} onChange={e => setLoginForm(p => ({ ...p, login: e.target.value }))} />
                 </div>
                 <div className="mb-2">
                   <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Password</label>
@@ -1251,7 +1259,7 @@ export default function AdminSheets() {
                     value={loginForm.password} onChange={e => setLoginForm(p => ({ ...p, password: e.target.value }))} />
                 </div>
                 <div className="mb-6 p-3 rounded-lg text-xs" style={{ background: '#f0fdf4', color: '#16a34a', fontFamily: 'Sarabun, sans-serif' }}>
-                  💡 admin / admin123
+                  💡 admin@meeting.com / admin123
                 </div>
                 <button type="submit" className="btn-primary btn-lg w-full" disabled={loginLoading}>
                   {loginLoading ? <><span className="loader" />&nbsp;กำลังเข้าสู่ระบบ...</> : '🔐 เข้าสู่ระบบ'}
@@ -1289,9 +1297,9 @@ export default function AdminSheets() {
           <div className="flex items-center justify-between" style={{ height: 72 }}>
             {/* Logo */}
             <button onClick={() => navigate('/')} className="flex items-center gap-3 cursor-pointer bg-transparent border-none text-white flex-shrink-0">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
-                style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)' }}>
-                🏛️
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center p-1 flex-shrink-0"
+                style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)' }}>
+                <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div className="text-left hidden sm:block">
                 <div className="font-bold text-[18px] leading-tight" style={{ fontFamily: 'Prompt, sans-serif' }}>ทต.บ้านคลอง · Admin</div>

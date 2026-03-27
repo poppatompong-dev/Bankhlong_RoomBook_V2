@@ -48,7 +48,7 @@ const registerRules = [
 ];
 
 const loginRules = [
-  body('email').isEmail().withMessage('กรุณากรอกอีเมลที่ถูกต้อง').normalizeEmail(),
+  body('login').notEmpty().withMessage('กรุณากรอกชื่อผู้ใช้หรืออีเมล'),
   body('password').notEmpty().withMessage('กรุณากรอกรหัสผ่าน')
 ];
 

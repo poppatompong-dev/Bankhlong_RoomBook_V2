@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 
-const API = 'http://localhost:5001/api';
+const API = 'http://127.0.0.1:5001/api';
 let passed = 0;
 let failed = 0;
 

@@ -38,16 +38,18 @@ router.post('/register', authLimiter, registerRules, handleValidation, async (re
 // POST /api/auth/login
 router.post('/login', authLimiter, loginRules, handleValidation, async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ email }).select('+password');
+    const { login, password } = req.body;
+    // Accept login by email or username
+    const isEmail = login.includes('@');
+    const query = isEmail ? { email: login.toLowerCase() } : { username: login };
+    const user = await User.findOne(query).select('+password');
     if (!user) {
-      return res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+      return res.status(401).json({ message: 'ชื่อผู้ใช้/อีเมล หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+      return res.status(401).json({ message: 'ชื่อผู้ใช้/อีเมล หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
     const token = generateToken(user._id);
