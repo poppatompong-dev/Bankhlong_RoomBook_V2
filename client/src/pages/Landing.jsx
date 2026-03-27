@@ -94,6 +94,24 @@ export default function Landing() {
             <span className="text-2xl group-hover:scale-110 transition-transform">🛡️</span>
             <span>สำหรับผู้ดูแลระบบ</span>
           </button>
+
+          <button
+            onClick={() => navigate('/help')}
+            className="group flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-200 cursor-pointer"
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              backdropFilter: 'blur(10px)',
+              border: '2px solid rgba(255,255,255,0.25)',
+              color: 'rgba(255,255,255,0.9)',
+              fontFamily: 'Sarabun, sans-serif',
+              minWidth: '220px'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            <span className="text-2xl group-hover:scale-110 transition-transform">📖</span>
+            <span>คู่มือการใช้งาน</span>
+          </button>
         </div>
 
         {/* Feature cards */}
