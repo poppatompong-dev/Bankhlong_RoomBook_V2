@@ -1,7 +1,10 @@
 /**
  * Vercel Serverless Function — ชี้ไปยัง server (MongoDB + Express)
  */
-require('dotenv').config({ path: require('path').resolve(__dirname, '../server/.env') });
+try {
+  require('dotenv').config({ path: require('path').resolve(__dirname, '../server/.env') });
+} catch (_) { /* Vercel: env vars come from Dashboard settings */ }
+
 
 const express = require('express');
 const cors = require('cors');
