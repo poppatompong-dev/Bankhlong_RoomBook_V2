@@ -21,7 +21,7 @@ export default function Bookings() {
         roomsAPI.list()
       ]);
       setBookings(bRes.data.bookings || []);
-      setRooms(rRes.data);
+      setRooms(rRes.data.rooms || []);
     } catch { showToast('ไม่สามารถโหลดข้อมูลได้', 'error'); }
     finally { setLoading(false); }
   };

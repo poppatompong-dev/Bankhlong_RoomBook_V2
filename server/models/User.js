@@ -4,23 +4,22 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'กรุณากรอกชื่อ'],
+    required: [true, 'กรุณากรอกชื่อ-นามสกุล'],
     trim: true,
     maxlength: 100
   },
-  email: {
+  username: {
     type: String,
-    required: [true, 'กรุณากรอกอีเมล'],
+    required: [true, 'กรุณากรอกชื่อบัญชีผู้ใช้'],
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'กรุณากรอกอีเมลที่ถูกต้อง']
+    maxlength: 50
   },
-  username: {
+  // email เก็บไว้ optional เพื่อ backward compat แต่ไม่บังคับ
+  email: {
     type: String,
-    unique: true,
-    sparse: true,
-    lowercase: true,
+    default: '',
     trim: true
   },
   password: {

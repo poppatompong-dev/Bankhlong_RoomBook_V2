@@ -22,9 +22,7 @@ export function today() {
 
 export function getStatusBadge(status) {
   switch (status) {
-    case 'confirmed': return { cls: 'badge-success', label: '✅ ยืนยันแล้ว' };
     case 'approved': return { cls: 'badge-success', label: '✅ อนุมัติ' };
-    case 'pending': return { cls: 'badge-warning', label: '⏳ รออนุมัติ' };
     case 'cancelled': return { cls: 'badge-danger', label: '❌ ยกเลิก' };
     default: return { cls: 'badge-info', label: status };
   }

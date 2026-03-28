@@ -10,7 +10,24 @@ const auth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
+    const id = decoded.id?.toString();
+
+    // ─── Hardcoded admin bypass (ไม่ต้อง query MongoDB) ─────────────────────
+    if (id === '000000000000000000000001') {
+      req.user = { _id: '000000000000000000000001', role: 'admin', name: 'ผู้ดูแลระบบสูงสุด', username: 'admin' };
+      return next();
+    }
+    if (id === '000000000000000000000002') {
+      req.user = { _id: '000000000000000000000002', role: 'admin', name: 'เจง ผู้ดูแลระบบ', username: 'jeng' };
+      return next();
+    }
+    // Legacy bypass (ถ้ามี token เก่า)
+    if (id === '000000000000000000000000') {
+      req.user = { _id: '000000000000000000000000', role: 'admin', name: 'ผู้ดูแลระบบ', username: 'admin' };
+      return next();
+    }
+
+    const user = await User.findById(id);
     if (!user) {
       return res.status(401).json({ message: 'ไม่พบผู้ใช้งาน' });
     }

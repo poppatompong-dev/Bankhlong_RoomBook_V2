@@ -53,7 +53,7 @@ const bookingSchema = new mongoose.Schema({
   restrictions: { type: String, default: '' },
 
   // ─── สถานะและหมายเหตุ ────────────────────────────────────────────────────
-  status: { type: String, enum: ['confirmed', 'cancelled', 'pending', 'approved'], default: 'confirmed' },
+  status: { type: String, enum: ['approved', 'cancelled'], default: 'approved' },
   adminNote: { type: String, default: '' },
   googleEventId: { type: String, default: null },
   cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
@@ -78,7 +78,7 @@ bookingSchema.statics.findOverlapping = async function (roomId, date, startTime,
   const query = {
     roomId,
     date,
-    status: { $in: ['confirmed', 'pending', 'approved'] },
+    status: 'approved',
     startTime: { $lt: endTime },
     endTime: { $gt: startTime }
   };

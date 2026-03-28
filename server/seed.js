@@ -119,7 +119,7 @@ async function seed() {
           equipment: { sound: true, micCount: 2, micType: 'ไมค์ลอย', projector: true, laptop: true, internet: true },
           additionalServices: { water: true, waterTime: '12:45', coffee: true },
           dressCode: '👔 แต่งกายชุดสุภาพ',
-          status: 'pending'
+          status: 'approved'
         },
         {
           requesterName: 'นางวิมล แก้วใส',
@@ -169,7 +169,7 @@ async function seed() {
           equipment: { sound: true, micCount: 3, micType: 'ไมค์ไร้สาย', projector: true, tv: true, internet: true },
           additionalServices: { water: true, waterTime: '12:30', signage: true },
           restrictions: '📸 มีสื่อมวลชนเข้าร่วม',
-          status: 'pending'
+          status: 'approved'
         },
         {
           requesterName: 'นายกมล สุขใจ',
@@ -215,7 +215,7 @@ async function seed() {
           attendees: 15, roomLayout: 'ushape',
           equipment: { flipchart: true, whiteboard: true, sound: true, micCount: 1, micType: 'ไมค์มือถือ' },
           additionalServices: { water: true, waterTime: '09:45' },
-          status: 'pending'
+          status: 'approved'
         },
         {
           requesterName: 'นายชัยชนะ บุญยิ่ง',
@@ -230,7 +230,7 @@ async function seed() {
           setupBefore: 30,
           equipment: { sound: true, micCount: 2, micType: 'ไมค์ลอย', laptop: true, internet: true },
           additionalServices: { water: true, waterTime: '12:45', coffee: true },
-          status: 'pending'
+          status: 'approved'
         },
 
         // ─── ห้องประชุมสารสนเทศ ──────────────────────────────────────────────
@@ -263,7 +263,7 @@ async function seed() {
           attendees: 8, roomLayout: 'conference',
           equipment: { projector: true, internet: true, whiteboard: true, laptop: true },
           additionalServices: { water: true, waterTime: '08:45', coffee: true },
-          status: 'pending'
+          status: 'approved'
         },
 
         // ─── อาคารเอนกประสงค์ ────────────────────────────────────────────────
@@ -298,7 +298,7 @@ async function seed() {
           equipment: { sound: true, micCount: 3, micType: 'ไมค์ไร้สาย', projector: true, laptop: true },
           additionalServices: { water: true, waterTime: '07:30', nameCards: true, signage: true, coffee: true },
           dressCode: '👗 แต่งกายชุดเครื่องแบบราชการ',
-          status: 'pending'
+          status: 'approved'
         }
       ];
 

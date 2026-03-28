@@ -5,7 +5,7 @@ const Room = require('../models/Room');
 const { auth } = require('../middleware/auth');
 const { bookingRules, handleValidation } = require('../middleware/validate');
 const { bookingLimiter } = require('../middleware/rateLimit');
-const lineNotify = require('../services/lineNotify');
+
 const googleCalendar = require('../services/googleCalendar');
 const AuditLog = require('../models/AuditLog');
 
@@ -69,6 +69,123 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/bookings/analytics — Admin statistics
+router.get('/analytics', async (req, res) => {
+  try {
+    const { year, month } = req.query;
+    const now = new Date();
+    const y = parseInt(year) || now.getFullYear();
+    const m = parseInt(month); // 1-12 or undefined = all year
+
+    // Build date filter
+    let dateFilter = {};
+    if (m) {
+      const pad = String(m).padStart(2, '0');
+      const lastDay = new Date(y, m, 0).getDate();
+      dateFilter = { date: { $gte: `${y}-${pad}-01`, $lte: `${y}-${pad}-${lastDay}` } };
+    } else {
+      dateFilter = { date: { $gte: `${y}-01-01`, $lte: `${y}-12-31` } };
+    }
+
+    const activeFilter = { ...dateFilter, status: { $ne: 'cancelled' } };
+
+    // 1. Totals
+    const totalBookings = await Booking.countDocuments({ ...dateFilter });
+    const approvedBookings = await Booking.countDocuments({ ...dateFilter, status: 'approved' });
+    const cancelledBookings = await Booking.countDocuments({ ...dateFilter, status: 'cancelled' });
+
+    // 2. Room utilization (simple grouping, calculate hours in JS)
+    const roomUtil = await Booking.aggregate([
+      { $match: activeFilter },
+      { $group: { _id: '$roomId', bookingCount: { $sum: 1 } } },
+      { $sort: { bookingCount: -1 } },
+      { $lookup: { from: 'rooms', localField: '_id', foreignField: '_id', as: 'room' } },
+      { $unwind: { path: '$room', preserveNullAndEmptyArrays: true } }
+    ]);
+
+    // Calculate total hours per room in JS (safer than $toDate aggregation)
+    const activeBookings = await Booking.find(activeFilter).select('roomId startTime endTime');
+    const roomHours = {};
+    activeBookings.forEach(b => {
+      try {
+        const rid = b.roomId?.toString();
+        const [sh, sm] = (b.startTime || '0:0').split(':').map(Number);
+        const [eh, em] = (b.endTime || '0:0').split(':').map(Number);
+        const hrs = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+        if (hrs > 0) roomHours[rid] = (roomHours[rid] || 0) + hrs;
+      } catch (_) {}
+    });
+
+    // 3. Monthly trend
+    const monthlyTrend = await Booking.aggregate([
+      { $match: { date: { $gte: `${y}-01-01`, $lte: `${y}-12-31` }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: { $substr: ['$date', 0, 7] }, count: { $sum: 1 } } },
+      { $sort: { '_id': 1 } }
+    ]);
+
+    // 4. Peak hours (top 8)
+    const hourCounts = {};
+    activeBookings.forEach(b => {
+      try {
+        const [sh] = (b.startTime || '0:0').split(':').map(Number);
+        const [eh] = (b.endTime || '0:0').split(':').map(Number);
+        for (let h = sh; h < eh; h++) {
+          const k = `${String(h).padStart(2, '0')}:00`;
+          hourCounts[k] = (hourCounts[k] || 0) + 1;
+        }
+      } catch (_) {}
+    });
+    const peakHours = Object.entries(hourCounts)
+      .map(([time, count]) => ({ time, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+
+    // 5. Busiest day of week
+    const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+    activeBookings.forEach(b => {
+      try {
+        const d = new Date(b.date || '2000-01-01');
+        if (!isNaN(d.getTime())) dayCounts[d.getDay()]++;
+      } catch (_) {}
+    });
+    const busiestDay = dayCounts.indexOf(Math.max(...dayCounts));
+
+    // 6. Dept breakdown (top 10)
+    const deptBreakdown = await Booking.aggregate([
+      { $match: activeFilter },
+      { $group: { _id: '$requesterDept', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+
+    // 7. Recent bookings for report
+    const recentBookings = await Booking.find(activeFilter)
+      .populate('roomId', 'name icon')
+      .sort({ date: -1, startTime: -1 })
+      .limit(50);
+
+    res.json({
+      ok: true,
+      year: y, month: m || null,
+      totalBookings, approvedBookings, cancelledBookings,
+      roomUtilization: roomUtil.map(r => ({
+        room: r.room ? { _id: r.room._id, name: r.room.name, icon: r.room.icon || '🏢' } : { _id: r._id, name: 'ไม่ระบุ', icon: '🏢' },
+        bookingCount: r.bookingCount,
+        totalHours: Math.round((roomHours[r._id?.toString()] || 0) * 10) / 10
+      })),
+      monthlyTrend,
+      peakHours,
+      busiestDay,
+      hourCounts,
+      deptBreakdown: deptBreakdown.map(d => ({ dept: d._id || 'ไม่ระบุ', count: d.count })),
+      recentBookings: recentBookings.map(normalizeBooking)
+    });
+  } catch (err) {
+    console.error('Analytics error:', err);
+    res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
 // POST /api/bookings — Guest booking (ไม่ต้อง login)
 router.post('/', bookingLimiter, bookingRules, handleValidation, async (req, res) => {
   try {
@@ -124,19 +241,19 @@ router.post('/', bookingLimiter, bookingRules, handleValidation, async (req, res
       additionalServices: additionalServices || {},
       dressCode: dressCode || '',
       restrictions: restrictions || '',
-      status: 'confirmed'
+      status: 'approved'
     });
 
     await booking.populate('roomId', 'name icon capacity floor location');
 
-    // สร้าง Google Calendar event ทันทีที่จองสำเร็จ (status=confirmed)
+    // สร้าง Google Calendar event ทันทีที่จองสำเร็จ (status=approved)
     const gcalResult = await googleCalendar.createEvent(booking, roomDoc);
     if (gcalResult.eventId) {
       booking.googleEventId = gcalResult.eventId;
       await booking.save();
     }
 
-    lineNotify.notifyBookingCreated(booking, roomDoc, { name: bookerName });
+
 
     // Audit log
     AuditLog.create({
@@ -196,14 +313,12 @@ router.put('/:id', auth, async (req, res) => {
         if (roomDoc) booking.roomId = roomDoc._id;
       }
 
-      if (status === 'approved' || status === 'confirmed') {
+      if (status === 'approved') {
         booking.status = 'approved';
         booking.approvedBy = req.user._id;
       } else if (status === 'cancelled') {
         booking.status = 'cancelled';
         booking.cancelledBy = req.user._id;
-      } else if (status === 'pending') {
-        booking.status = 'pending';
       }
 
       await booking.save();
@@ -299,32 +414,36 @@ router.patch('/:id/cancel', auth, async (req, res) => {
   }
 });
 
-// DELETE /api/bookings/:id — Admin หรือเจ้าของ
+// DELETE /api/bookings/:id — Admin: ลบถาวร
 router.delete('/:id', auth, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ ok: false, message: 'ไม่พบการจอง' });
+
     const isAdmin = req.user.role === 'admin';
-    const isOwner = booking.userId && booking.userId.toString() === req.user._id.toString();
+    const isOwner = booking.userId && String(booking.userId) === String(req.user._id);
     if (!isAdmin && !isOwner) return res.status(403).json({ ok: false, message: 'คุณไม่มีสิทธิ์' });
-    booking.status = 'cancelled';
-    booking.cancelledBy = req.user._id;
+
+    // ลบ Google Calendar event ถ้ามี
     if (booking.googleEventId) {
-      await googleCalendar.deleteEvent(booking.googleEventId);
-      booking.googleEventId = null;
+      try { await googleCalendar.deleteEvent(booking.googleEventId); } catch(_) {}
     }
-    await booking.save();
+
+    // ลบจาก DB จริง
+    await Booking.findByIdAndDelete(req.params.id);
+
     AuditLog.create({
       action: 'booking.deleted',
       bookingId: booking._id,
-      performedBy: req.user.name || req.user.email,
+      performedBy: req.user.name || req.user.username || 'admin',
       userId: req.user._id,
       ip: req.ip || req.headers['x-forwarded-for'] || '',
-      detail: { deletedBy: 'admin' }
-    }).catch(() => { });
+      detail: { deletedBy: isAdmin ? 'admin' : 'owner' }
+    }).catch(() => {});
+
     const io = req.app.get('io');
     if (io) io.emit('booking:cancelled', { id: booking._id });
-    res.json({ ok: true, message: 'ยกเลิกการจองสำเร็จ' });
+    res.json({ ok: true, message: 'ลบการจองสำเร็จ' });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }

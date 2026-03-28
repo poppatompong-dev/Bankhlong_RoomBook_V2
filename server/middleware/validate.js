@@ -42,7 +42,7 @@ const bookingRules = [
 // Auth validation rules
 const registerRules = [
   body('name').notEmpty().withMessage('กรุณากรอกชื่อ').trim(),
-  body('email').isEmail().withMessage('กรุณากรอกอีเมลที่ถูกต้อง').normalizeEmail(),
+  body('email').notEmpty().withMessage('กรุณากรอกชื่อบัญชี / อีเมล').trim(),
   body('password').isLength({ min: 6 }).withMessage('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร')
 ];
 

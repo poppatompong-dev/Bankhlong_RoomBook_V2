@@ -141,11 +141,8 @@ export default function Landing() {
         <div style={{ opacity: 0.85, fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
           เทศบาลตำบลบ้านคลอง อ.เมือง จ.พิษณุโลก
         </div>
-        <div style={{ opacity: 0.55, fontSize: 11, marginBottom: 2 }}>
-          พัฒนาโดย นักวิชาการคอมพิวเตอร์ · กองช่าง เทศบาลตำบลบ้านคลอง
-        </div>
-        <div style={{ opacity: 0.4, fontSize: 10, fontStyle: 'italic', letterSpacing: '0.5px' }}>
-          &ldquo;เขียนโค้ดไม่ได้อยู่ใน JD แต่อยู่ในสายเลือด&rdquo;
+        <div style={{ opacity: 0.55, fontSize: 11 }}>
+          พัฒนาโดย นักวิชาการคอมพิวเตอร์ · เทศบาลตำบลบ้านคลอง
         </div>
       </footer>
     </div>

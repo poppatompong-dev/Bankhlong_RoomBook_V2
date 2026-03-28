@@ -38,7 +38,10 @@ export const authAPI = {
 // Rooms
 export const roomsAPI = {
   list: () => api.get('/rooms'),
-  availability: (id, date) => api.get(`/rooms/${id}/availability?date=${date}`)
+  availability: (id, date) => api.get(`/rooms/${id}/availability?date=${date}`),
+  create: (data) => api.post('/rooms', data),
+  update: (id, data) => api.put(`/rooms/${id}`, data),
+  delete: (id) => api.delete(`/rooms/${id}`)
 };
 
 // Bookings
@@ -49,6 +52,14 @@ export const bookingsAPI = {
   cancel: (id) => api.delete(`/bookings/${id}`),
   analytics: (params = {}) => api.get('/bookings/analytics', { params }),
   recommendations: (params = {}) => api.get('/bookings/recommendations', { params })
+};
+
+// Users
+export const usersAPI = {
+  list: () => api.get('/users'),
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  delete: (id) => api.delete(`/users/${id}`)
 };
 
 export default api;

@@ -10,7 +10,7 @@ import { formatDateTH, today, getStatusBadge } from '../utils/helpers';
 export default function Dashboard() {
   const [rooms, setRooms] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(today());
+  const [selectedDate, setSelectedDate] = useState(null);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -22,18 +22,20 @@ export default function Dashboard() {
     try {
       const [roomsRes, bookingsRes] = await Promise.all([
         roomsAPI.list(),
-        bookingsAPI.list({ date: selectedDate })
+        bookingsAPI.list({ limit: 500 })  // โหลดทั้งหมด เพื่อ detect conflict
       ]);
-      setRooms(roomsRes.data);
+      setRooms(roomsRes.data.rooms || []);
       setBookings(bookingsRes.data.bookings || []);
     } catch (err) {
       showToast('ไม่สามารถโหลดข้อมูลได้', 'error');
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, []);  // ไม่ depend on selectedDate
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // เมื่อ selectedDate เปลี่ยน ไม่ต้อง re-fetch ทั้งหมด — filter จาก state ที่มีอยู่แล้ว
 
   // Real-time updates
   useEffect(() => {
@@ -65,14 +67,16 @@ export default function Dashboard() {
   const handleBook = async (formData) => {
     try {
       await bookingsAPI.create(formData);
-      showToast('✅ สร้างการจองสำเร็จ รอการอนุมัติ', 'success');
+      showToast('✅ จองห้องประชุมสำเร็จ! อนุมัติทันที', 'success');
       setShowForm(false);
       setSelectedRoom(null);
       fetchData();
     } catch (err) {
-      const msg = err.response?.data?.message || 'เกิดข้อผิดพลาดในการจอง';
+      const msg = err.response?.data?.message
+        || err.response?.data?.errors?.[0]?.message
+        || 'เกิดข้อผิดพลาดในการจอง';
       showToast(msg, 'error');
-      throw err; // re-throw so form can handle
+      throw err;
     }
   };
 
@@ -93,7 +97,13 @@ export default function Dashboard() {
           <h1 className="font-prompt text-xl font-bold text-gray-800">🏠 แดชบอร์ด</h1>
           <p className="text-sm text-gray-400">วันที่ {formatDateTH(selectedDate)} · {bookingsForDate.length} การจองวันนี้</p>
         </div>
-        <button className="btn-primary btn-lg" onClick={() => setShowForm(true)}>+ จองห้องประชุม</button>
+        <button className="btn-primary btn-lg" onClick={() => {
+          if (!selectedDate) {
+            showToast('กรุณาเลือกวันที่บนปฏิทินก่อนจองห้องประชุม', 'warning');
+          } else {
+            setShowForm(true);
+          }
+        }}>+ จองห้องประชุม</button>
       </div>
 
       {/* Grid: Calendar + Rooms */}
@@ -105,9 +115,22 @@ export default function Dashboard() {
             <span className="badge badge-info">เลือกวันที่</span>
           </div>
           <div className="card-body">
-            <Calendar selected={selectedDate} onSelect={setSelectedDate} bookings={bookings} />
-            <div className="mt-4 p-3 rounded-lg bg-green-50 text-sm text-green-600">
-              📅 วันที่เลือก: <strong>{formatDateTH(selectedDate)}</strong>
+            <Calendar 
+              selected={selectedDate} 
+              onSelect={(d) => { 
+                setSelectedDate(d); 
+                setSelectedRoom(null);
+                setShowForm(true); 
+              }} 
+              bookings={bookings} 
+              onQuickBook={(d) => { 
+                setSelectedDate(d); 
+                setSelectedRoom(null);
+                setShowForm(true); 
+              }} 
+            />
+            <div className={`mt-4 p-3 rounded-lg text-sm ${selectedDate ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-500'}`}>
+              📅 วันที่เลือก: {selectedDate ? <strong>{formatDateTH(selectedDate)}</strong> : 'ยังไม่ได้เลือกวันที่'}
             </div>
           </div>
         </div>
@@ -116,7 +139,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="card-header">
             <div className="card-title">🏢 ห้องประชุม</div>
-            <span className="badge badge-success">{rooms.length - bookedRoomIds.size} ว่าง</span>
+            {selectedDate && <span className="badge badge-success">{rooms.length - bookedRoomIds.size} ว่าง</span>}
           </div>
           <div className="card-body p-4">
             <div className="flex flex-col gap-3">
@@ -129,7 +152,14 @@ export default function Dashboard() {
                 return (
                   <div key={room._id}
                     className={`room-card ${isBooked ? 'booked' : 'available'} ${selectedRoom?._id === room._id ? 'selected' : ''}`}
-                    onClick={() => { if (!isBooked) { setSelectedRoom(room); setShowForm(true); } }}>
+                    onClick={() => { 
+                      if (!selectedDate) {
+                        showToast('กรุณาเลือกวันที่บนปฏิทินก่อนเลือกห้อง', 'warning');
+                      } else if (!isBooked) { 
+                        setSelectedRoom(room); 
+                        setShowForm(true); 
+                      } 
+                    }}>
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{room.icon}</span>
                       <div className="flex-1">
@@ -178,15 +208,16 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {bookingsForDate.map(b => {
-                  const room = typeof b.roomId === 'object' ? b.roomId : rooms.find(r => r._id === b.roomId);
-                  const userName = typeof b.userId === 'object' ? b.userId.name : 'N/A';
+                  const roomName = b.room || b.roomId?.name || 'ไม่ระบุชื่อห้อง';
+                  const roomIcon = b.roomIcon || '🏢';
+                  const userName = b.name || (b.userId?.name) || 'ไม่ระบุชื่อ';
                   const status = getStatusBadge(b.status);
                   return (
                     <tr key={b._id} className="hover:bg-green-50 transition-colors">
                       <td className="px-4 py-3.5 text-sm">
                         <div className="font-semibold">{userName}</div>
                       </td>
-                      <td className="px-4 py-3.5 text-sm">{room?.icon} {room?.name}</td>
+                      <td className="px-4 py-3.5 text-sm">{roomIcon} {roomName}</td>
                       <td className="px-4 py-3.5 text-sm">
                         <span className="font-semibold text-teal-600">{b.startTime}</span>
                         <span className="text-gray-400"> – </span>

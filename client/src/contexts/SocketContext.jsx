@@ -12,12 +12,13 @@ export function SocketProvider({ children }) {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!SOCKET_ENABLED) return; // Sheets backend — skip WebSocket
-
     // Dynamically import socket.io-client only when needed
     import('socket.io-client').then(({ io }) => {
       const token = localStorage.getItem('token');
-      const newSocket = io(window.location.origin, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const socketUrl = apiUrl.replace('/api', '');
+      
+      const newSocket = io(socketUrl, {
         auth: { token },
         transports: ['websocket', 'polling'],
         reconnectionAttempts: 3,
@@ -26,7 +27,7 @@ export function SocketProvider({ children }) {
 
       newSocket.on('connect', () => {
         setConnected(true);
-        console.log('🔌 Socket connected');
+        console.log('🔌 Socket connected via v2 backend');
       });
 
       newSocket.on('disconnect', () => {
@@ -34,8 +35,7 @@ export function SocketProvider({ children }) {
       });
 
       newSocket.on('connect_error', (err) => {
-        // Silently ignore — Sheets backend doesn't support Socket.io
-        console.info('ℹ️ Socket.io not available (Sheets backend mode)');
+        console.error('Socket.io connection error:', err);
         newSocket.close();
       });
 

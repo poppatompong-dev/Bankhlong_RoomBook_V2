@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import logo from '../assets/logo.png';
 
 export default function Login() {
   const [form, setForm] = useState({ login: '', password: '' });
@@ -16,8 +17,12 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(form.login, form.password);
-      navigate('/');
+      const userData = await login(form.login, form.password);
+      if (userData.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'เกิดข้อผิดพลาด');
     } finally {
@@ -33,13 +38,13 @@ export default function Login() {
         <div className="text-center mb-8">
           <div className="mx-auto mb-4 flex items-center justify-center">
             <img
-              src="https://img2.pic.in.th/S__76685340.png"
-              alt="logo"
+              src={logo}
+              alt="โลโก้เทศบาลตำบลบ้านคลอง"
               className="h-20 w-20 object-contain rounded-2xl"
               style={{ boxShadow: '0 4px 15px rgba(20,184,166,0.2)' }}
             />
           </div>
-          <h1 className="font-prompt text-2xl font-bold text-gray-800">Smart Meeting Room</h1>
+          <h1 className="font-prompt text-2xl font-bold text-gray-800">เทศบาลตำบลบ้านคลอง</h1>
           <p className="text-gray-400 text-sm mt-1">ระบบจองห้องประชุมอัจฉริยะ</p>
         </div>
 
@@ -55,8 +60,9 @@ export default function Login() {
 
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">ชื่อผู้ใช้ / อีเมล</label>
-                <input type="text" className="form-control" placeholder="admin หรือ your@email.com" required
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">ชื่อบัญชีผู้ใช้</label>
+                <input type="text" className="form-control" placeholder="เช่น admin, jeng" required
+                  autoComplete="username"
                   value={form.login} onChange={e => setForm({...form, login: e.target.value})} />
               </div>
               <div className="mb-6">
@@ -69,14 +75,12 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-gray-400">
-              ยังไม่มีบัญชี? <Link to="/register" className="text-teal-500 font-semibold hover:text-teal-600">ลงทะเบียน</Link>
-            </div>
+
 
             <div className="mt-4 p-3 rounded-lg bg-teal-50 border border-teal-200 text-xs text-teal-700">
-              <p className="font-semibold mb-1">🔑 บัญชีทดสอบ:</p>
-              <p>Admin: admin / admin123</p>
-              <p>User: user@meeting.com / user123</p>
+              <p className="font-semibold mb-1">🔑 บัญชีผู้ดูแลระบบ:</p>
+              <p>admin / admin123</p>
+              <p>jeng / jeng</p>
             </div>
           </div>
         </div>
