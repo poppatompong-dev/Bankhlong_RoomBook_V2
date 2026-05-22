@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext';
 const SocketContext = createContext(null);
 
 // Detect if we're using the Sheets backend (no Socket.io support)
-const SOCKET_ENABLED = import.meta.env.VITE_SOCKET_ENABLED !== 'false';
+const SOCKET_ENABLED = import.meta.env.VITE_SOCKET_ENABLED === 'true';
 
 export function SocketProvider({ children }) {
   const [socket, setSocket] = useState(null);
@@ -12,6 +12,12 @@ export function SocketProvider({ children }) {
   const { user } = useAuth();
 
   useEffect(() => {
+    if (!SOCKET_ENABLED) {
+      setSocket(null);
+      setConnected(false);
+      return;
+    }
+
     // Dynamically import socket.io-client only when needed
     import('socket.io-client').then(({ io }) => {
       const token = localStorage.getItem('token');
