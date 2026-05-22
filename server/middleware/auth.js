@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'local-dev-secret';
+
 // Verify JWT token
 const auth = async (req, res, next) => {
   try {
@@ -9,7 +11,7 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'กรุณาเข้าสู่ระบบ' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     const id = decoded.id?.toString();
 
     // ─── Hardcoded admin bypass (ไม่ต้อง query MongoDB) ─────────────────────
@@ -49,7 +51,7 @@ const requireAdmin = (req, res, next) => {
 
 // Generate JWT token
 const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+  return jwt.sign({ id: userId }, JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
 };
