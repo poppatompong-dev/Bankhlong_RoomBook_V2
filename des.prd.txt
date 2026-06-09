@@ -1,0 +1,167 @@
+# PRD: Bankhlong Room Booking V2
+
+## Product Name
+Bankhlong Room Booking V2  
+ระบบจองห้องประชุม เทศบาลตำบลบ้านคลอง
+
+## Product Overview
+Bankhlong Room Booking V2 is a web-based meeting room booking system for Ban Khlong Municipality. The system allows general users to view meeting room availability, select a date and room, submit a booking request, and allows administrators to manage bookings, rooms, statistics, and system settings.
+
+The application is built with React + Vite frontend and an Express/Vercel API backend. The current production database target is Supabase PostgreSQL.
+
+## Primary Users
+1. General Staff / Public Users
+   - View available meeting rooms
+   - Select booking date and time
+   - Submit meeting room booking request
+
+2. Admin Users
+   - Login to admin area
+   - Manage bookings
+   - Manage meeting rooms
+   - View analytics/statistics
+   - Review system settings
+
+## Core User Flows
+
+### 1. Landing Page
+User opens the website and sees the municipality-branded landing page.
+
+Expected behavior:
+- Logo and municipality name are visible
+- Navigation to booking/dashboard is available
+- Page loads without console errors
+
+### 2. Dashboard / Booking Flow
+User opens `/dashboard`.
+
+Expected behavior:
+- Calendar is displayed
+- Room list is displayed
+- Rooms show name, icon, capacity, and floor
+- User can select a date
+- User can open booking form
+- User can select room and time
+- User can submit booking successfully
+- Booked rooms/times should show as unavailable
+- Duplicate overlapping bookings should be rejected
+
+### 3. Booking Validation
+The booking form must validate required fields.
+
+Required fields:
+- Name
+- Phone
+- Room
+- Date
+- Start time
+- End time
+- Purpose
+
+Validation rules:
+- End time must be after start time
+- Maximum booking duration is 4 hours
+- Past dates cannot be booked
+- Overlapping bookings for the same room/date/time are not allowed
+
+### 4. Admin Login
+Admin opens `/login`.
+
+Expected behavior:
+- Admin can login with configured credentials
+- Successful login stores session/token locally
+- User is redirected to admin/dashboard area
+- Invalid login shows error message
+
+Default test credentials:
+- Username: `admin`
+- Password: configured by environment, commonly `admin123` in local/dev
+
+### 5. Admin Booking Management
+Admin opens `/admin`.
+
+Expected behavior:
+- Booking list loads
+- Admin can view booking details
+- Admin can edit booking
+- Admin can cancel booking
+- Admin can delete booking
+- UI updates after changes
+
+### 6. Room Management
+Admin can manage meeting rooms.
+
+Expected behavior:
+- Rooms list loads from database
+- Admin can create room
+- Admin can edit room name, capacity, icon, floor
+- Admin can delete room if allowed
+- Room list updates after changes
+
+### 7. Analytics Page
+Admin opens `/analytics`.
+
+Expected behavior:
+- Analytics page loads without database errors
+- KPIs are displayed
+- Total bookings, approved/confirmed bookings, cancelled bookings are visible
+- Room utilization is displayed
+- Peak hours and recent bookings are displayed
+- Empty database state should render gracefully with zero counts
+
+### 8. Settings Page
+Admin opens `/settings`.
+
+Expected behavior:
+- Profile information is displayed
+- Google Calendar section renders
+- API endpoint list renders
+- Room list renders without React key warnings
+- Page does not crash if optional integrations are missing
+
+## API Requirements
+
+### Health
+`GET /api/health`
+
+Expected response:
+- HTTP 200
+- `ok: true`
+- `status: healthy`
+- `database: supabase` when Supabase is connected
+
+### Rooms
+`GET /api/rooms`
+
+Expected response:
+- HTTP 200
+- `ok: true`
+- `rooms` array
+- Each room includes:
+  - `id`
+  - `name`
+  - `capacity`
+  - `icon`
+  - `floor`
+
+### Bookings
+`GET /api/bookings`
+
+Expected response:
+- HTTP 200
+- `ok: true`
+- `bookings` array
+
+`POST /api/bookings`
+
+Required request body:
+```json
+{
+  "name": "Test User",
+  "phone": "0812345678",
+  "room": "ห้องมณีจันทรา ชั้น 1",
+  "date": "2026-06-12",
+  "startTime": "09:00",
+  "endTime": "10:00",
+  "purpose": "ประชุมทดสอบ"
+}
