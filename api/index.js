@@ -10,6 +10,7 @@ const cors = require('cors');
 const authRouter = require('../server-sheets/routes/auth');
 const bookingsRouter = require('../server-sheets/routes/bookings');
 const roomsRouter = require('../server-sheets/routes/rooms');
+const usersRouter = require('../server-sheets/routes/users');
 const sheets = require('../server-sheets/services/sheets');
 const supabaseDb = require('../server-sheets/services/supabaseDb');
 
@@ -46,6 +47,7 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/bookings', bookingsRouter);
 app.use('/api/rooms', roomsRouter);
+app.use('/api/users', usersRouter);
 
 app.use((req, res) => {
   res.status(404).json({ ok: false, message: `Not found: ${req.method} ${req.path}` });

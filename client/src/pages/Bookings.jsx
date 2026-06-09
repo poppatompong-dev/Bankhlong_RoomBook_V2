@@ -30,10 +30,15 @@ export default function Bookings() {
 
   const filtered = useMemo(() =>
     bookings
-      .filter(b => !filterRoom || (typeof b.roomId === 'object' ? b.roomId._id : b.roomId) === filterRoom)
+      .filter(b => {
+        if (!filterRoom) return true;
+        const roomId = typeof b.roomId === 'object' ? b.roomId._id : b.roomId;
+        const selectedRoom = rooms.find(r => r._id === filterRoom || r.id === filterRoom);
+        return roomId === filterRoom || b.room === selectedRoom?.name;
+      })
       .filter(b => !filterDate || b.date === filterDate)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
-  [bookings, filterRoom, filterDate]);
+  [bookings, rooms, filterRoom, filterDate]);
 
   const handleCancel = async (id) => {
     try {
@@ -95,7 +100,9 @@ export default function Bookings() {
               </thead>
               <tbody>
                 {filtered.map((b, i) => {
-                  const room = typeof b.roomId === 'object' ? b.roomId : rooms.find(r => r._id === b.roomId);
+                  const room = typeof b.roomId === 'object'
+                    ? b.roomId
+                    : rooms.find(r => r._id === b.roomId || r.name === b.room) || { name: b.room, icon: b.roomIcon || '🏢' };
                   const status = getStatusBadge(b.status);
                   return (
                     <tr key={b._id} className="hover:bg-green-50 transition-colors">
@@ -134,7 +141,7 @@ export default function Bookings() {
             <div className="px-7 py-5">
               <p className="text-sm text-gray-600 leading-relaxed">
                 คุณต้องการยกเลิกการจอง<br />
-                <strong>{typeof cancelConfirm.roomId === 'object' ? cancelConfirm.roomId.name : ''}</strong><br />
+                <strong>{typeof cancelConfirm.roomId === 'object' ? cancelConfirm.roomId.name : cancelConfirm.room || ''}</strong><br />
                 วันที่ {formatDateTH(cancelConfirm.date)} เวลา {cancelConfirm.startTime}–{cancelConfirm.endTime} น.
               </p>
             </div>

@@ -2,6 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const ROOM_COLUMNS = 'id,name,capacity,icon,floor,location,is_active,created_at,updated_at';
 const BOOKING_COLUMNS = 'id,name,phone,dept,room,booking_date,start_time,end_time,purpose,status,activity,attendees,equipment,additional_services,metadata,created_at,updated_at';
+const ADMIN_USER_COLUMNS = 'id,username,name,role,password_hash,created_at,updated_at';
 
 let client = null;
 
@@ -31,6 +32,7 @@ function getClient() {
 function toRoom(row) {
   return {
     id: row.id,
+    _id: row.id,
     name: row.name,
     capacity: row.capacity,
     icon: row.icon || '🏢',
@@ -68,6 +70,7 @@ function mapRoomFields(fields) {
 function toBooking(row) {
   return {
     id: row.id,
+    _id: row.id,
     name: row.name,
     phone: row.phone,
     dept: row.dept || '',
@@ -85,6 +88,39 @@ function toBooking(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+}
+
+function toAdminUser(row) {
+  return {
+    id: row.id,
+    _id: row.id,
+    username: row.username,
+    name: row.name,
+    role: row.role || 'admin',
+    phone: '',
+    isActive: true,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function fromAdminUser(user) {
+  return {
+    username: String(user.username || '').trim().toLowerCase(),
+    name: String(user.name || '').trim(),
+    role: user.role || 'admin',
+    password_hash: user.passwordHash || user.password_hash || user.password || null
+  };
+}
+
+function mapAdminUserFields(fields) {
+  const mapped = {};
+  if (fields.username !== undefined) mapped.username = String(fields.username).trim().toLowerCase();
+  if (fields.name !== undefined) mapped.name = String(fields.name).trim();
+  if (fields.role !== undefined) mapped.role = fields.role || 'admin';
+  if (fields.passwordHash !== undefined) mapped.password_hash = fields.passwordHash;
+  if (fields.password_hash !== undefined) mapped.password_hash = fields.password_hash;
+  return mapped;
 }
 
 function fromBooking(booking) {
@@ -213,6 +249,53 @@ async function deleteBooking(id) {
   return true;
 }
 
+async function getAdminUsers() {
+  const { data, error } = await getClient()
+    .from('admin_users')
+    .select(ADMIN_USER_COLUMNS)
+    .order('created_at', { ascending: true });
+  throwIfError(error);
+  return (data || []).map(toAdminUser);
+}
+
+async function getAdminUserByLogin(login) {
+  const normalized = String(login || '').trim().toLowerCase();
+  const { data, error } = await getClient()
+    .from('admin_users')
+    .select(ADMIN_USER_COLUMNS)
+    .eq('username', normalized)
+    .maybeSingle();
+  throwIfError(error);
+  return data;
+}
+
+async function createAdminUser(user) {
+  const { data, error } = await getClient()
+    .from('admin_users')
+    .insert(fromAdminUser(user))
+    .select(ADMIN_USER_COLUMNS)
+    .single();
+  throwIfError(error);
+  return toAdminUser(data);
+}
+
+async function updateAdminUser(id, fields) {
+  const { data, error } = await getClient()
+    .from('admin_users')
+    .update(mapAdminUserFields(fields))
+    .eq('id', id)
+    .select(ADMIN_USER_COLUMNS)
+    .single();
+  throwIfError(error);
+  return toAdminUser(data);
+}
+
+async function deleteAdminUser(id) {
+  const { error } = await getClient().from('admin_users').delete().eq('id', id);
+  throwIfError(error);
+  return true;
+}
+
 module.exports = {
   isEnabled,
   getClient,
@@ -224,5 +307,10 @@ module.exports = {
   appendBooking,
   updateBookingStatus,
   updateBooking,
-  deleteBooking
+  deleteBooking,
+  getAdminUsers,
+  getAdminUserByLogin,
+  createAdminUser,
+  updateAdminUser,
+  deleteAdminUser
 };

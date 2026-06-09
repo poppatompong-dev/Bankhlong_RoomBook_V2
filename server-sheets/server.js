@@ -6,6 +6,7 @@ const sheets = require('./services/sheets');
 const bookingsRouter = require('./routes/bookings');
 const roomsRouter = require('./routes/rooms');
 const authRouter = require('./routes/auth');
+const usersRouter = require('./routes/users');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -40,6 +41,7 @@ app.use('/api/bookings', (req, res, next) => {
 app.use('/api/auth', authRouter);
 app.use('/api/bookings', bookingsRouter);
 app.use('/api/rooms', roomsRouter);
+app.use('/api/users', usersRouter);
 
 // Health check
 app.get('/api/health', async (req, res) => {

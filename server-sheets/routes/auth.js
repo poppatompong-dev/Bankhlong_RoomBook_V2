@@ -5,6 +5,8 @@
 
 const express = require('express');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const supabaseDb = require('../services/supabaseDb');
 
 const router = express.Router();
 
@@ -56,7 +58,17 @@ function verifyToken(token) {
 
 module.exports.verifyToken = verifyToken;
 
-router.post('/login', (req, res) => {
+async function passwordMatches(password, storedHash) {
+  if (!storedHash) return false;
+  if (storedHash === password) return true;
+  try {
+    return await bcrypt.compare(String(password), storedHash);
+  } catch {
+    return false;
+  }
+}
+
+router.post('/login', async (req, res) => {
   const { login, username, password } = req.body;
   const loginVal = (login || username || '').trim().toLowerCase();
 
@@ -64,10 +76,31 @@ router.post('/login', (req, res) => {
     return res.status(400).json({ ok: false, message: 'กรุณากรอกชื่อบัญชีและรหัสผ่าน' });
   }
 
-  const user = USERS.find((candidate) => (
-    candidate.username === loginVal ||
-    candidate.email === loginVal
-  ) && candidate.password === password);
+  let user = null;
+
+  if (supabaseDb.isEnabled()) {
+    try {
+      const adminUser = await supabaseDb.getAdminUserByLogin(loginVal);
+      if (adminUser && await passwordMatches(password, adminUser.password_hash)) {
+        user = {
+          id: adminUser.id,
+          name: adminUser.name,
+          username: adminUser.username,
+          email: `${adminUser.username}@meeting.local`,
+          role: adminUser.role || 'admin'
+        };
+      }
+    } catch (err) {
+      console.error('Supabase admin login failed:', err.message);
+    }
+  }
+
+  if (!user) {
+    user = USERS.find((candidate) => (
+      candidate.username === loginVal ||
+      candidate.email === loginVal
+    ) && candidate.password === password);
+  }
 
   if (!user) {
     return res.status(401).json({ ok: false, message: 'ชื่อบัญชีหรือรหัสผ่านไม่ถูกต้อง' });
@@ -86,7 +119,7 @@ router.post('/login', (req, res) => {
   });
 });
 
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) {
     return res.status(401).json({ ok: false, message: 'ไม่ได้เข้าสู่ระบบ' });
@@ -97,7 +130,15 @@ router.get('/me', (req, res) => {
     return res.status(401).json({ ok: false, message: 'Token หมดอายุ' });
   }
 
-  const user = USERS.find((candidate) => candidate.id === data.id);
+  let user = USERS.find((candidate) => candidate.id === data.id);
+  if (!user && supabaseDb.isEnabled()) {
+    try {
+      const users = await supabaseDb.getAdminUsers();
+      user = users.find((candidate) => candidate.id === data.id);
+    } catch (err) {
+      console.error('Supabase admin profile lookup failed:', err.message);
+    }
+  }
   if (!user) {
     return res.status(404).json({ ok: false, message: 'ไม่พบผู้ใช้' });
   }
