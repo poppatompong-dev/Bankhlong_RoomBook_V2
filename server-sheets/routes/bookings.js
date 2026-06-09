@@ -4,6 +4,118 @@ const sheets = require('../services/sheets');
 const line = require('../services/lineNotify');
 const { validateBookingBody, genId } = require('../utils/validation');
 
+const DEFAULT_ROOMS = [
+  { id: 'r1', name: 'ห้องมณีจันทรา ชั้น 1', capacity: 20, icon: '💎', floor: '1' },
+  { id: 'r2', name: 'ห้องพระพุทธสัมฤทธิ์โกสีย์ ชั้น 3', capacity: 30, icon: '🏛️', floor: '3' },
+  { id: 'r3', name: 'ห้องชัยบุรี กองสาธารณสุข', capacity: 20, icon: '⚔️', floor: '2' },
+  { id: 'r4', name: 'ห้องประชุมสารสนเทศ (ศูนย์ข้อมูลข่าวสาร)', capacity: 10, icon: '💻', floor: '2' },
+  { id: 'r5', name: 'อาคารเอนกประสงค์ (โดม)', capacity: 200, icon: '🏟️', floor: 'G' }
+];
+
+const TIME_SLOTS = [
+  '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
+  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+  '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+  '16:00', '16:30', '17:00', '17:30', '18:00', '18:30',
+  '19:00', '19:30', '20:00'
+];
+
+function getRoomMeta(roomName) {
+  return DEFAULT_ROOMS.find(r => r.name === roomName) || {
+    id: roomName,
+    name: roomName,
+    capacity: 0,
+    icon: '🏢',
+    floor: '-'
+  };
+}
+
+function addCount(map, key, amount = 1) {
+  map.set(key, (map.get(key) || 0) + amount);
+}
+
+function buildAnalytics(bookings, query = {}) {
+  const now = new Date();
+  const year = Number(query.year) || now.getFullYear();
+  const month = query.month ? Number(query.month) : null;
+
+  const scoped = bookings.filter((booking) => {
+    if (!booking.date) return false;
+    const [bookingYear, bookingMonth] = booking.date.split('-').map(Number);
+    return bookingYear === year && (!month || bookingMonth === month);
+  });
+
+  const activeBookings = scoped.filter(b => b.status !== 'cancelled');
+  const cancelledBookings = scoped.filter(b => b.status === 'cancelled');
+
+  const roomStats = new Map();
+  const monthCounts = new Map();
+  const hourCounts = new Map(TIME_SLOTS.map(slot => [slot, 0]));
+  const deptCounts = new Map();
+  const dayCounts = new Map();
+
+  scoped.forEach((booking) => {
+    const monthKey = booking.date.slice(0, 7);
+    addCount(monthCounts, monthKey);
+    addCount(dayCounts, new Date(`${booking.date}T00:00:00`).getDay());
+
+    if (booking.status === 'cancelled') return;
+
+    const roomName = booking.room || 'ไม่ระบุห้อง';
+    const room = roomStats.get(roomName) || {
+      room: getRoomMeta(roomName),
+      bookingCount: 0,
+      totalHours: 0
+    };
+    room.bookingCount += 1;
+    room.totalHours += Math.max(sheets.timeDiffMinutes(booking.startTime, booking.endTime), 0) / 60;
+    roomStats.set(roomName, room);
+
+    TIME_SLOTS.forEach((slot) => {
+      if (slot >= booking.startTime && slot < booking.endTime) addCount(hourCounts, slot);
+    });
+
+    addCount(deptCounts, booking.dept || 'ไม่ระบุหน่วยงาน');
+  });
+
+  const peakHours = [...hourCounts.entries()]
+    .filter(([, count]) => count > 0)
+    .map(([time, count]) => ({ time, count }))
+    .sort((a, b) => b.count - a.count || a.time.localeCompare(b.time))
+    .slice(0, 8);
+
+  const busiestDay = [...dayCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 0;
+
+  return {
+    ok: true,
+    year,
+    month,
+    totalBookings: scoped.length,
+    approvedBookings: activeBookings.length,
+    cancelledBookings: cancelledBookings.length,
+    roomUtilization: [...roomStats.values()]
+      .map(item => ({ ...item, totalHours: Number(item.totalHours.toFixed(1)) }))
+      .sort((a, b) => b.bookingCount - a.bookingCount),
+    monthlyTrend: [...monthCounts.entries()]
+      .map(([_id, count]) => ({ _id, count }))
+      .sort((a, b) => a._id.localeCompare(b._id)),
+    peakHours,
+    busiestDay,
+    hourCounts: Object.fromEntries(hourCounts),
+    deptBreakdown: [...deptCounts.entries()]
+      .map(([dept, count]) => ({ dept, count }))
+      .sort((a, b) => b.count - a.count),
+    recentBookings: [...scoped]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 20)
+      .map(b => ({
+        ...b,
+        _id: b.id,
+        roomIcon: getRoomMeta(b.room).icon
+      }))
+  };
+}
+
 /**
  * GET /api/bookings/health-check (Internal test)
  */
@@ -41,6 +153,28 @@ router.get('/check-availability', async (req, res) => {
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }
+});
+
+/**
+ * GET /api/bookings/analytics
+ * Lightweight analytics for the Sheets backend.
+ * CRITICAL: This MUST be above /:id to avoid shadowing.
+ */
+router.get('/analytics', async (req, res) => {
+  try {
+    const bookings = await sheets.getAllBookings();
+    res.json(buildAnalytics(bookings, req.query));
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
+/**
+ * GET /api/bookings/recommendations
+ * Compatibility endpoint for the shared client API.
+ */
+router.get('/recommendations', async (req, res) => {
+  res.json({ ok: true, recommendations: [] });
 });
 
 /**

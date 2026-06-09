@@ -27,6 +27,18 @@ const SVC_LIST = [
   { key: 'signage', label: '🖼️ ป้ายไวนิล / ป้ายหน้างาน' },
 ];
 
+const getRoomId = (room) => room?._id || room?.id || room?.name || '';
+const getBookingRoomId = (booking) => {
+  if (typeof booking?.roomId === 'object') {
+    return booking.roomId?._id || booking.roomId?.id || booking.roomId?.name || '';
+  }
+  return booking?.roomId || '';
+};
+const bookingMatchesRoomId = (booking, roomId, rooms) => {
+  const room = rooms.find(r => getRoomId(r) === roomId);
+  return getBookingRoomId(booking) === roomId || (room?.name && booking?.room === room.name);
+};
+
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'application/msword',
@@ -65,7 +77,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
     attendees: '', roomLayout: '',
     dressCode: '', restrictions: '',
     setupBefore: '', cleanupAfter: '',
-    roomId: selectedRoom?._id || '',
+    roomId: getRoomId(selectedRoom),
     startTime: '', endTime: '',
     equipment: { ...initEq },
     additionalServices: { ...initSvc },
@@ -84,25 +96,18 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
     const s = new Set();
     if (!form.roomId || !selectedDate) return s;
     bookings
-      .filter(b => {
-        const rid = typeof b.roomId === 'object' ? b.roomId?._id?.toString() : (b.roomId?.toString());
-        const bId = typeof b.room === 'string' ? null : rid;
-        // match by roomId or by the normalized room id from API response
-        return (rid === form.roomId || b.roomId === form.roomId)
-          && b.date === selectedDate
-          && b.status !== 'cancelled';
-      })
+      .filter(b => bookingMatchesRoomId(b, form.roomId, rooms) && b.date === selectedDate && b.status !== 'cancelled')
       .forEach(b => {
         TIME_SLOTS.forEach(t => { if (t >= b.startTime && t < b.endTime) s.add(t); });
       });
     return s;
-  }, [form.roomId, bookings, selectedDate]);
+  }, [form.roomId, bookings, selectedDate, rooms]);
 
   const endOptions = useMemo(() => {
     if (!form.startTime) return [];
     const idx = TIME_SLOTS.indexOf(form.startTime);
     const opts = [];
-    for (let i = idx + 1; i <= Math.min(idx + 16, TIME_SLOTS.length - 1); i++) {
+    for (let i = idx + 1; i <= Math.min(idx + 8, TIME_SLOTS.length - 1); i++) {
       const t = TIME_SLOTS[i];
       const blocked = TIME_SLOTS.slice(idx + 1, i).some(s => bookedSlots.has(s));
       if (!blocked) opts.push(t); else break;
@@ -139,7 +144,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
     if (form.startTime && form.endTime) {
       const dur = timeDiff(form.startTime, form.endTime);
       if (dur <= 0) e.endTime = 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม';
-      if (dur > 480) e.endTime = 'สูงสุด 8 ชั่วโมง';
+      if (dur > 240) e.endTime = 'สูงสุด 4 ชั่วโมง';
     }
     setErrors(e); return Object.keys(e).length === 0;
   };
@@ -152,24 +157,20 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
         r.onload = () => resolve({ name: f.name, type: f.type, size: f.size, data: r.result });
         r.readAsDataURL(f.file);
       })));
+      const selectedRoomObj = rooms.find(r => getRoomId(r) === form.roomId);
       await onBook({
-        requesterName: form.name.trim(), requesterPhone: form.phone.trim(), requesterDept: form.dept.trim(),
-        roomId: form.roomId, date: selectedDate,
-        startTime: form.startTime, endTime: form.endTime,
-        purpose: form.purpose.trim(), activity: form.activity.trim(),
-        attendees: Number(form.attendees) || 0,
-        roomLayout: form.roomLayout, dressCode: form.dressCode,
-        restrictions: form.restrictions.trim(),
-        setupBefore: Number(form.setupBefore) || 0,
-        cleanupAfter: Number(form.cleanupAfter) || 0,
-        equipment: form.equipment,
-        additionalServices: form.additionalServices,
-        
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        room: selectedRoomObj?.name || form.roomId,
+        date: selectedDate,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        purpose: form.purpose.trim()
       });
     } catch { } finally { setLoading(false); }
   };
 
-  const roomObj = rooms.find(r => r._id === form.roomId);
+  const roomObj = rooms.find(r => getRoomId(r) === form.roomId);
   const dur = form.startTime && form.endTime ? timeDiff(form.startTime, form.endTime) : 0;
   const canSubmit = form.roomId && form.startTime && form.endTime && dur > 0;
 
@@ -270,7 +271,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
                 <select className="form-control cursor-pointer" value={form.roomId} onChange={e => { set('roomId', e.target.value); set('startTime', ''); set('endTime', ''); }} style={{ fontFamily: 'Sarabun, sans-serif' }}>
                   <option value="">-- เลือกห้องประชุม --</option>
                   {rooms.filter(r => r.isActive !== false).map(r => (
-                    <option key={r._id} value={r._id}>{r.icon} {r.name} (ความจุ {r.capacity} คน · ชั้น {r.floor})</option>
+                    <option key={getRoomId(r)} value={getRoomId(r)}>{r.icon} {r.name} (ความจุ {r.capacity} คน · ชั้น {r.floor})</option>
                   ))}
                 </select>
                 <Err msg={errors.room} />
@@ -307,7 +308,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
 
               {form.startTime && (
                 <div>
-                  <LBL req>เวลาสิ้นสุด (สูงสุด 8 ชั่วโมง)</LBL>
+                <LBL req>เวลาสิ้นสุด (สูงสุด 4 ชั่วโมง)</LBL>
                   {endOptions.length === 0
                     ? <p className="text-xs text-red-500" style={{ fontFamily: 'Sarabun, sans-serif' }}>ช่วงเวลาถัดไปถูกจองแล้ว กรุณาเลือกเวลาเริ่มอื่น</p>
                     : <div className="flex flex-wrap gap-1.5">

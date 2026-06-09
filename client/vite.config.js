@@ -1,8 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { createRequire } from 'node:module'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Toggle: 'sheets' = Google Sheets backend (port 5001)
 //         'mongo'  = MongoDB backend (port 5000)
@@ -17,10 +20,16 @@ function embeddedSheetsApi() {
     configureServer(server) {
       if (BACKEND !== 'sheets') return
 
+      require('../server-sheets/node_modules/dotenv').config({
+        path: path.resolve(__dirname, '../server-sheets/.env')
+      })
+
       const express = require('../server-sheets/node_modules/express')
       const sheetsAuthRouter = require('../server-sheets/routes/auth')
       const sheetsBookingsRouter = require('../server-sheets/routes/bookings')
       const sheetsRoomsRouter = require('../server-sheets/routes/rooms')
+      const sheets = require('../server-sheets/services/sheets')
+      const supabaseDb = require('../server-sheets/services/supabaseDb')
 
       server.middlewares.use(express.json({ limit: '1mb' }))
       server.middlewares.use((req, res, next) => {
@@ -34,16 +43,33 @@ function embeddedSheetsApi() {
         }
         next()
       })
+      server.middlewares.use((req, _res, next) => {
+        const url = new URL(req.url, 'http://localhost')
+        req.query = Object.fromEntries(url.searchParams.entries())
+        next()
+      })
       server.middlewares.use('/api/auth', sheetsAuthRouter)
       server.middlewares.use('/api/bookings', sheetsBookingsRouter)
       server.middlewares.use('/api/rooms', sheetsRoomsRouter)
       server.middlewares.use('/api/health', async (req, res) => {
+        let bookings = []
+        let status = 'healthy'
+        let error = null
+        try {
+          bookings = await sheets.getAllBookings()
+        } catch (err) {
+          status = 'unhealthy'
+          error = err.message
+        }
         res.setHeader('content-type', 'application/json')
         res.end(JSON.stringify({
-          ok: true,
-          status: 'healthy',
+          ok: status === 'healthy',
+          status,
           mode: 'vite-embedded-sheets',
-          timestamp: new Date().toISOString()
+          database: supabaseDb.isEnabled() ? 'supabase' : 'mock',
+          cachedBookings: bookings.length,
+          timestamp: new Date().toISOString(),
+          ...(error ? { error } : {})
         }))
       })
     }

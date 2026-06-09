@@ -5,6 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
+const supabaseDb = require('../services/supabaseDb');
 
 let ROOMS = [
   { id: 'r1', name: 'ห้องมณีจันทรา ชั้น 1', capacity: 20, icon: '💎', floor: '1' },
@@ -19,65 +20,93 @@ function genRoomId() {
 }
 
 // GET /api/rooms
-router.get('/', (req, res) => {
-  res.json({ ok: true, rooms: ROOMS });
+router.get('/', async (req, res) => {
+  try {
+    const rooms = supabaseDb.isEnabled() ? await supabaseDb.getRooms() : ROOMS;
+    res.json({ ok: true, rooms });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
 });
 
 // POST /api/rooms — create new room
-router.post('/', (req, res) => {
-  const { name, capacity, icon, floor } = req.body;
+router.post('/', async (req, res) => {
+  const { name, capacity, icon, floor, location } = req.body;
   if (!name || !capacity || !floor) {
     return res.status(400).json({ ok: false, message: 'กรุณากรอก ชื่อห้อง, ความจุ, และชั้น' });
   }
-  if (ROOMS.find(r => r.name === name.trim())) {
-    return res.status(409).json({ ok: false, message: 'ชื่อห้องนี้มีอยู่แล้ว' });
+  try {
+    const rooms = supabaseDb.isEnabled() ? await supabaseDb.getRooms() : ROOMS;
+    if (rooms.find(r => r.name === name.trim())) {
+      return res.status(409).json({ ok: false, message: 'ชื่อห้องนี้มีอยู่แล้ว' });
+    }
+    const room = {
+      id: genRoomId(),
+      name: name.trim(),
+      capacity: Number(capacity),
+      icon: icon || '🏢',
+      floor: String(floor).trim(),
+      location
+    };
+    const saved = supabaseDb.isEnabled() ? await supabaseDb.createRoom(room) : room;
+    if (!supabaseDb.isEnabled()) ROOMS.push(saved);
+    console.log(`✅ Room created: ${saved.name}`);
+    res.status(201).json({ ok: true, message: 'เพิ่มห้องประชุมสำเร็จ', room: saved });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
   }
-  const room = {
-    id: genRoomId(),
-    name: name.trim(),
-    capacity: Number(capacity),
-    icon: icon || '🏢',
-    floor: String(floor).trim()
-  };
-  ROOMS.push(room);
-  console.log(`✅ Room created: ${room.name}`);
-  res.status(201).json({ ok: true, message: 'เพิ่มห้องประชุมสำเร็จ', room });
 });
 
 // PUT /api/rooms/:id — update room
-router.put('/:id', (req, res) => {
-  const idx = ROOMS.findIndex(r => r.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ ok: false, message: 'ไม่พบห้อง' });
-  const { name, capacity, icon, floor } = req.body;
-  if (name && name.trim() !== ROOMS[idx].name && ROOMS.find(r => r.name === name.trim())) {
-    return res.status(409).json({ ok: false, message: 'ชื่อห้องนี้มีอยู่แล้ว' });
+router.put('/:id', async (req, res) => {
+  try {
+    const rooms = supabaseDb.isEnabled() ? await supabaseDb.getRooms() : ROOMS;
+    const idx = rooms.findIndex(r => r.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ ok: false, message: 'ไม่พบห้อง' });
+    const { name, capacity, icon, floor, location, isActive } = req.body;
+    if (name && name.trim() !== rooms[idx].name && rooms.find(r => r.name === name.trim())) {
+      return res.status(409).json({ ok: false, message: 'ชื่อห้องนี้มีอยู่แล้ว' });
+    }
+    const fields = {
+      ...(name && { name: name.trim() }),
+      ...(capacity && { capacity: Number(capacity) }),
+      ...(icon && { icon }),
+      ...(floor && { floor: String(floor).trim() }),
+      ...(location !== undefined && { location }),
+      ...(isActive !== undefined && { isActive }),
+    };
+    const updated = supabaseDb.isEnabled()
+      ? await supabaseDb.updateRoom(req.params.id, fields)
+      : { ...ROOMS[idx], ...fields };
+    if (!supabaseDb.isEnabled()) ROOMS[idx] = updated;
+    console.log(`✅ Room updated: ${updated.name}`);
+    res.json({ ok: true, message: 'แก้ไขห้องประชุมสำเร็จ', room: updated });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
   }
-  const updated = {
-    ...ROOMS[idx],
-    ...(name && { name: name.trim() }),
-    ...(capacity && { capacity: Number(capacity) }),
-    ...(icon && { icon }),
-    ...(floor && { floor: String(floor).trim() }),
-  };
-  ROOMS[idx] = updated;
-  console.log(`✅ Room updated: ${updated.name}`);
-  res.json({ ok: true, message: 'แก้ไขห้องประชุมสำเร็จ', room: updated });
 });
 
 // DELETE /api/rooms/:id — delete room
 router.delete('/:id', async (req, res) => {
-  const idx = ROOMS.findIndex(r => r.id === req.params.id);
+  const rooms = supabaseDb.isEnabled() ? await supabaseDb.getRooms() : ROOMS;
+  const idx = rooms.findIndex(r => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ ok: false, message: 'ไม่พบห้อง' });
-  const room = ROOMS[idx];
-  ROOMS.splice(idx, 1);
-  console.log(`✅ Room deleted: ${room.name}`);
-  res.json({ ok: true, message: 'ลบห้องประชุมสำเร็จ', id: req.params.id });
+  try {
+    const room = rooms[idx];
+    if (supabaseDb.isEnabled()) await supabaseDb.deleteRoom(req.params.id);
+    else ROOMS.splice(idx, 1);
+    console.log(`✅ Room deleted: ${room.name}`);
+    res.json({ ok: true, message: 'ลบห้องประชุมสำเร็จ', id: req.params.id });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
 });
 
 // GET /api/rooms/:id/availability?date=YYYY-MM-DD
 router.get('/:id/availability', async (req, res) => {
   try {
-    const room = ROOMS.find(r => r.id === req.params.id);
+    const rooms = supabaseDb.isEnabled() ? await supabaseDb.getRooms() : ROOMS;
+    const room = rooms.find(r => r.id === req.params.id);
     if (!room) return res.status(404).json({ ok: false, message: 'ไม่พบห้อง' });
 
     const { date } = req.query;

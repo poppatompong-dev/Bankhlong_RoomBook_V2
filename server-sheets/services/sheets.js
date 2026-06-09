@@ -9,6 +9,7 @@
  */
 
 const { google } = require('googleapis');
+const supabaseDb = require('./supabaseDb');
 
 // ─── Column map ────────────────────────────────────────────────────────────
 const COL = {
@@ -130,6 +131,11 @@ function bookingToRow(booking) {
 
 // ─── Sheet initialization (ensure header row) ───────────────────────────────
 async function ensureHeaders() {
+  if (supabaseDb.isEnabled()) {
+    await supabaseDb.getAllBookings();
+    console.log('✅ Supabase connection verified');
+    return;
+  }
   if (process.env.MOCK_DATABASE === 'true') {
     console.log('✅ [MOCK] Sheet headers initialized');
     return;
@@ -158,6 +164,16 @@ async function ensureHeaders() {
 // ─── Read all rows (with cache) ─────────────────────────────────────────────
 async function getAllBookings(forceRefresh = false) {
   const now = Date.now();
+
+  if (supabaseDb.isEnabled()) {
+    if (!forceRefresh && (now - _cache.lastFetched) < _cache.ttl) {
+      return _cache.data;
+    }
+    _cache.data = await supabaseDb.getAllBookings();
+    _cache.lastFetched = now;
+    console.log(`🟢 Supabase cache refreshed: ${_cache.data.length} bookings`);
+    return _cache.data;
+  }
 
   if (process.env.MOCK_DATABASE === 'true') {
     _cache.lastFetched = now;
@@ -205,6 +221,12 @@ function invalidateCache() {
 
 // ─── Append a new booking row ────────────────────────────────────────────────
 async function appendBooking(booking) {
+  if (supabaseDb.isEnabled()) {
+    const saved = await supabaseDb.appendBooking(booking);
+    _cache.data.push(saved);
+    console.log(`✅ [SUPABASE] Appended booking: ${saved.id}`);
+    return saved;
+  }
   if (process.env.MOCK_DATABASE === 'true') {
     _cache.data.push(booking);
     console.log(`✅ [MOCK] Appended booking: ${booking.id}`);
@@ -245,6 +267,13 @@ async function findRowNumber(bookingId) {
 
 // ─── Update status of a booking ─────────────────────────────────────────────
 async function updateBookingStatus(bookingId, newStatus) {
+  if (supabaseDb.isEnabled()) {
+    const updated = await supabaseDb.updateBookingStatus(bookingId, newStatus);
+    const idx = _cache.data.findIndex(b => b.id === bookingId);
+    if (idx !== -1) _cache.data[idx] = updated;
+    console.log(`✅ [SUPABASE] Updated booking ${bookingId} status → ${newStatus}`);
+    return updated;
+  }
   if (process.env.MOCK_DATABASE === 'true') {
     const idx = _cache.data.findIndex(b => b.id === bookingId);
     if (idx !== -1) {
@@ -348,6 +377,13 @@ async function deleteCalendarEvent(eventId) {
 
 // ─── Update full booking row ─────────────────────────────────────────────────
 async function updateBooking(bookingId, fields) {
+  if (supabaseDb.isEnabled()) {
+    const updated = await supabaseDb.updateBooking(bookingId, fields);
+    const idx = _cache.data.findIndex(b => b.id === bookingId);
+    if (idx !== -1) _cache.data[idx] = updated;
+    console.log(`✅ [SUPABASE] Updated booking ${bookingId}`);
+    return updated;
+  }
   if (process.env.MOCK_DATABASE === 'true') {
     const idx = _cache.data.findIndex(b => b.id === bookingId);
     if (idx === -1) throw new Error(`การจอง ${bookingId} ไม่พบในระบบ`);
@@ -378,6 +414,13 @@ async function updateBooking(bookingId, fields) {
 
 // ─── Delete a booking row ─────────────────────────────────────────────────────
 async function deleteBooking(bookingId) {
+  if (supabaseDb.isEnabled()) {
+    await supabaseDb.deleteBooking(bookingId);
+    const idx = _cache.data.findIndex(b => b.id === bookingId);
+    if (idx !== -1) _cache.data.splice(idx, 1);
+    console.log(`✅ [SUPABASE] Deleted booking ${bookingId}`);
+    return true;
+  }
   if (process.env.MOCK_DATABASE === 'true') {
     const idx = _cache.data.findIndex(b => b.id === bookingId);
     if (idx === -1) throw new Error(`การจอง ${bookingId} ไม่พบในระบบ`);

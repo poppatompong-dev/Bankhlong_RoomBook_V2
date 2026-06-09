@@ -7,6 +7,17 @@ import Calendar from '../components/calendar/Calendar';
 import BookingForm from '../components/booking/BookingForm';
 import { formatDateTH, today, getStatusBadge } from '../utils/helpers';
 
+const getRoomId = (room) => room?._id || room?.id || room?.name;
+const getBookingId = (booking) => booking?._id || booking?.id;
+const getBookingRoomName = (booking) => booking?.room || booking?.roomId?.name;
+const bookingMatchesRoom = (booking, room) => {
+  const roomId = getRoomId(room);
+  const bookingRoomId = typeof booking.roomId === 'object'
+    ? (booking.roomId?._id || booking.roomId?.id || booking.roomId?.name)
+    : booking.roomId;
+  return bookingRoomId === roomId || getBookingRoomName(booking) === room?.name;
+};
+
 export default function Dashboard() {
   const [rooms, setRooms] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -55,14 +66,9 @@ export default function Dashboard() {
     bookings.filter(b => b.date === selectedDate && b.status !== 'cancelled'),
   [bookings, selectedDate]);
 
-  const bookedRoomIds = useMemo(() => {
-    const ids = new Set();
-    bookingsForDate.forEach(b => {
-      const roomId = typeof b.roomId === 'object' ? b.roomId._id : b.roomId;
-      ids.add(roomId);
-    });
-    return ids;
-  }, [bookingsForDate]);
+  const bookedRoomCount = useMemo(() => {
+    return rooms.filter(room => bookingsForDate.some(b => bookingMatchesRoom(b, room))).length;
+  }, [bookingsForDate, rooms]);
 
   const handleBook = async (formData) => {
     try {
@@ -139,19 +145,18 @@ export default function Dashboard() {
         <div className="card">
           <div className="card-header">
             <div className="card-title">🏢 ห้องประชุม</div>
-            {selectedDate && <span className="badge badge-success">{rooms.length - bookedRoomIds.size} ว่าง</span>}
+            {selectedDate && <span className="badge badge-success">{rooms.length - bookedRoomCount} ว่าง</span>}
           </div>
           <div className="card-body p-4">
             <div className="flex flex-col gap-3">
               {rooms.map(room => {
-                const isBooked = bookedRoomIds.has(room._id);
-                const roomBookings = bookingsForDate.filter(b => {
-                  const rid = typeof b.roomId === 'object' ? b.roomId._id : b.roomId;
-                  return rid === room._id;
-                });
+                const roomId = getRoomId(room);
+                const selectedRoomId = getRoomId(selectedRoom);
+                const roomBookings = bookingsForDate.filter(b => bookingMatchesRoom(b, room));
+                const isBooked = roomBookings.length > 0;
                 return (
-                  <div key={room._id}
-                    className={`room-card ${isBooked ? 'booked' : 'available'} ${selectedRoom?._id === room._id ? 'selected' : ''}`}
+                  <div key={roomId}
+                    className={`room-card ${isBooked ? 'booked' : 'available'} ${selectedRoomId === roomId ? 'selected' : ''}`}
                     onClick={() => { 
                       if (!selectedDate) {
                         showToast('กรุณาเลือกวันที่บนปฏิทินก่อนเลือกห้อง', 'warning');
@@ -174,7 +179,7 @@ export default function Dashboard() {
                     {roomBookings.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
                         {roomBookings.slice(0, 3).map(b => (
-                          <span key={b._id} className="text-xs px-2 py-0.5 bg-yellow-50 text-yellow-800 rounded">
+                          <span key={getBookingId(b)} className="text-xs px-2 py-0.5 bg-yellow-50 text-yellow-800 rounded">
                             {b.startTime}–{b.endTime}
                           </span>
                         ))}
@@ -213,7 +218,7 @@ export default function Dashboard() {
                   const userName = b.name || (b.userId?.name) || 'ไม่ระบุชื่อ';
                   const status = getStatusBadge(b.status);
                   return (
-                    <tr key={b._id} className="hover:bg-green-50 transition-colors">
+                    <tr key={getBookingId(b)} className="hover:bg-green-50 transition-colors">
                       <td className="px-4 py-3.5 text-sm">
                         <div className="font-semibold">{userName}</div>
                       </td>

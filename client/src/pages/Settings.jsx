@@ -145,7 +145,7 @@ export default function Settings() {
           <div className="card-header"><div className="card-title">🏢 ห้องประชุมในระบบ ({rooms.length} ห้อง)</div></div>
           <div className="card-body">
             {rooms.map(r => (
-              <div key={r._id} className="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-b-0">
+              <div key={r._id || r.id || r.name} className="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-b-0">
                 <span className="text-xl">{r.icon}</span>
                 <div className="flex-1">
                   <div className="text-sm font-semibold">{r.name}</div>
