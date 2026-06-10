@@ -40,6 +40,8 @@ export default function Login() {
             <img
               src={logo}
               alt="โลโก้เทศบาลตำบลบ้านคลอง"
+              width="80"
+              height="80"
               className="h-20 w-20 object-contain rounded-2xl"
               style={{ boxShadow: '0 4px 15px rgba(20,184,166,0.2)' }}
             />
@@ -68,6 +70,7 @@ export default function Login() {
               <div className="mb-6">
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">รหัสผ่าน</label>
                 <input type="password" className="form-control" placeholder="••••••" required
+                  autoComplete="current-password"
                   value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
               </div>
               <button type="submit" className="btn-primary btn-lg w-full" disabled={loading}>

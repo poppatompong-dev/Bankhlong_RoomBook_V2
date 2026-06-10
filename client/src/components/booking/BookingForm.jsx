@@ -144,7 +144,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
     if (form.startTime && form.endTime) {
       const dur = timeDiff(form.startTime, form.endTime);
       if (dur <= 0) e.endTime = 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม';
-      if (dur > 240) e.endTime = 'สูงสุด 4 ชั่วโมง';
+      if (dur > 480) e.endTime = 'สูงสุด 8 ชั่วโมง';
     }
     setErrors(e); return Object.keys(e).length === 0;
   };
@@ -308,7 +308,7 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
 
               {form.startTime && (
                 <div>
-                <LBL req>เวลาสิ้นสุด (สูงสุด 4 ชั่วโมง)</LBL>
+                <LBL req>เวลาสิ้นสุด (สูงสุด 8 ชั่วโมง)</LBL>
                   {endOptions.length === 0
                     ? <p className="text-xs text-red-500" style={{ fontFamily: 'Sarabun, sans-serif' }}>ช่วงเวลาถัดไปถูกจองแล้ว กรุณาเลือกเวลาเริ่มอื่น</p>
                     : <div className="flex flex-wrap gap-1.5">

@@ -73,7 +73,7 @@ function DashHeader({ navigate }) {
           <button onClick={() => navigate('/')} className="flex items-center gap-3 cursor-pointer bg-transparent border-none text-white flex-shrink-0">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center p-1 flex-shrink-0"
               style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)' }}>
-              <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" width="40" height="40" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div className="text-left hidden sm:block">
               <div className="font-bold text-[18px] leading-tight" style={{ fontFamily: 'Prompt, sans-serif' }}>เทศบาลตำบลบ้านคลอง</div>
@@ -334,18 +334,25 @@ export default function DashboardSheets() {
   };
 
   const fetchData = useCallback(async () => {
-    try {
-      const [roomsRes, bookingsRes] = await Promise.all([
-        api.get('/rooms'),
-        api.get('/bookings'),
-      ]);
-      setRooms(roomsRes.data.rooms || []);
-      setAllBookings(bookingsRes.data.bookings || []);
-    } catch {
-      showToast('ไม่สามารถโหลดข้อมูลได้', 'error');
-    } finally {
-      setLoading(false);
+    const [roomsResult, bookingsResult] = await Promise.allSettled([
+      api.get('/rooms'),
+      api.get('/bookings'),
+    ]);
+
+    if (roomsResult.status === 'fulfilled') {
+      setRooms(roomsResult.value.data.rooms || []);
+    } else {
+      showToast('ไม่สามารถโหลดข้อมูลห้องประชุมได้', 'error');
     }
+
+    if (bookingsResult.status === 'fulfilled') {
+      setAllBookings(bookingsResult.value.data.bookings || []);
+    } else {
+      setAllBookings([]);
+      showToast('ไม่สามารถโหลดข้อมูลการจองได้', 'error');
+    }
+
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);

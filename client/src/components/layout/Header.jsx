@@ -24,7 +24,7 @@ export default function Header() {
         <Link to="/" className="flex items-center gap-3 no-underline text-white hover:text-white">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center p-1"
             style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)' }}>
-            <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" width="40" height="40" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div>
             <div className="font-prompt text-lg font-semibold leading-tight">เทศบาลตำบลบ้านคลอง</div>

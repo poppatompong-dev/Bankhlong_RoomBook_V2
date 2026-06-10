@@ -30,18 +30,25 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   const fetchData = useCallback(async () => {
-    try {
-      const [roomsRes, bookingsRes] = await Promise.all([
-        roomsAPI.list(),
-        bookingsAPI.list({ limit: 500 })  // โหลดทั้งหมด เพื่อ detect conflict
-      ]);
-      setRooms(roomsRes.data.rooms || []);
-      setBookings(bookingsRes.data.bookings || []);
-    } catch (err) {
-      showToast('ไม่สามารถโหลดข้อมูลได้', 'error');
-    } finally {
-      setLoading(false);
+    const [roomsResult, bookingsResult] = await Promise.allSettled([
+      roomsAPI.list(),
+      bookingsAPI.list({ limit: 500 })  // โหลดทั้งหมด เพื่อ detect conflict
+    ]);
+
+    if (roomsResult.status === 'fulfilled') {
+      setRooms(roomsResult.value.data.rooms || []);
+    } else {
+      showToast('ไม่สามารถโหลดข้อมูลห้องประชุมได้', 'error');
     }
+
+    if (bookingsResult.status === 'fulfilled') {
+      setBookings(bookingsResult.value.data.bookings || []);
+    } else {
+      setBookings([]);
+      showToast('ไม่สามารถโหลดข้อมูลการจองได้', 'error');
+    }
+
+    setLoading(false);
   }, []);  // ไม่ depend on selectedDate
 
   useEffect(() => { fetchData(); }, [fetchData]);

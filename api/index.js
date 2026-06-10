@@ -12,7 +12,7 @@ const bookingsRouter = require('../server-sheets/routes/bookings');
 const roomsRouter = require('../server-sheets/routes/rooms');
 const usersRouter = require('../server-sheets/routes/users');
 const sheets = require('../server-sheets/services/sheets');
-const supabaseDb = require('../server-sheets/services/supabaseDb');
+const databaseMode = require('../server-sheets/services/databaseMode');
 
 const app = express();
 
@@ -26,11 +26,12 @@ app.use(express.json({ limit: '5mb' }));
 
 app.get('/api/health', async (req, res) => {
   try {
+    const database = databaseMode.assertConfigured();
     const bookings = await sheets.getAllBookings();
     res.json({
       ok: true,
       status: 'healthy',
-      database: supabaseDb.isEnabled() ? 'supabase' : 'mock',
+      database,
       cachedBookings: bookings.length,
       timestamp: new Date().toISOString()
     });
@@ -38,7 +39,7 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({
       ok: false,
       status: 'unhealthy',
-      database: supabaseDb.isEnabled() ? 'supabase' : 'mock',
+      database: databaseMode.getDatabaseMode(),
       error: err.message
     });
   }

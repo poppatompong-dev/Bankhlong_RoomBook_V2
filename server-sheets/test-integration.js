@@ -56,19 +56,19 @@ async function run() {
   ok('Returns ok:false (409)',    ov.ok === false);
   ok('Thai error message',       ov.message?.includes('ถูกจองแล้ว'));
 
-  // ── Max-4h validation ───────────────────────────────────────────────
-  console.log('\n5️⃣  Validation – over 4 hours (rejected)');
+  // ── Max-8h validation ───────────────────────────────────────────────
+  console.log('\n5️⃣  Validation – over 8 hours (rejected)');
   const maxH = await fetch(`${API}/bookings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: 'Test', phone: '000-000-0000',
       room: 'ห้องชัยบุรี', date: '2026-04-02',
-      startTime: '08:00', endTime: '14:00', purpose: 'เกิน 4 ชั่วโมง'
+      startTime: '08:00', endTime: '17:30', purpose: 'เกิน 8 ชั่วโมง'
     })
   }).then(r => r.json());
-  ok('Returns ok:false (>4h)',    maxH.ok === false);
-  ok('Thai error message',       maxH.errors?.some(e => e.includes('4 ชั่วโมง')));
+  ok('Returns ok:false (>8h)',    maxH.ok === false);
+  ok('Thai error message',       maxH.errors?.some(e => e.includes('8 ชั่วโมง')));
 
   // ── Availability check ──────────────────────────────────────────────
   console.log('\n6️⃣  Availability check');

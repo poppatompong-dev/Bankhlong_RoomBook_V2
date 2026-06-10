@@ -164,7 +164,7 @@ export default function Help() {
             <button onClick={() => navigate('/')} className="flex items-center gap-2 bg-transparent border-none cursor-pointer text-white">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center p-1 flex-shrink-0"
                 style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(255,255,255,0.3)' }}>
-                <img src={logo} alt="โลโก้" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" width="36" height="36" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div className="text-left hidden sm:block">
                 <div className="font-bold text-base leading-tight" style={{ fontFamily: 'Prompt, sans-serif' }}>เทศบาลตำบลบ้านคลอง</div>

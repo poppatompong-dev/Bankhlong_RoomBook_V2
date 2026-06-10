@@ -30,7 +30,7 @@ function embeddedSheetsApi() {
       const sheetsRoomsRouter = require('../server-sheets/routes/rooms')
       const sheetsUsersRouter = require('../server-sheets/routes/users')
       const sheets = require('../server-sheets/services/sheets')
-      const supabaseDb = require('../server-sheets/services/supabaseDb')
+      const databaseMode = require('../server-sheets/services/databaseMode')
 
       server.middlewares.use(express.json({ limit: '1mb' }))
       server.middlewares.use((req, res, next) => {
@@ -58,6 +58,7 @@ function embeddedSheetsApi() {
         let status = 'healthy'
         let error = null
         try {
+          databaseMode.assertConfigured()
           bookings = await sheets.getAllBookings()
         } catch (err) {
           status = 'unhealthy'
@@ -68,7 +69,7 @@ function embeddedSheetsApi() {
           ok: status === 'healthy',
           status,
           mode: 'vite-embedded-sheets',
-          database: supabaseDb.isEnabled() ? 'supabase' : 'mock',
+          database: databaseMode.getDatabaseMode(),
           cachedBookings: bookings.length,
           timestamp: new Date().toISOString(),
           ...(error ? { error } : {})

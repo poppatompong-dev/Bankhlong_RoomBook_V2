@@ -760,8 +760,8 @@ function TabRooms({ rooms, onRefreshRooms, showToast }) {
         </div>
       </div>
 
-      <div className="mt-4 p-4 rounded-xl text-sm" style={{ background: '#fef3c7', color: '#92400e', fontFamily: 'Sarabun,sans-serif' }}>
-        ⚠️ การเปลี่ยนแปลงห้องถูกเก็บใน memory — จะรีเซ็ตเมื่อรีสตาร์ทเซิร์ฟเวอร์ หากต้องการถาวรให้แก้ไขใน <code>server-sheets/routes/rooms.js</code>
+      <div className="mt-4 p-4 rounded-xl text-sm" style={{ background: '#f0fdf4', color: '#15803d', fontFamily: 'Sarabun,sans-serif' }}>
+        ✅ การเปลี่ยนแปลงห้องจะถูกบันทึกถาวรเมื่อระบบตั้งค่า <code>DATABASE_URL</code> แล้ว
       </div>
     </div>
   );
@@ -1203,8 +1203,8 @@ function TabUsers() {
         </div>
       </div>
 
-      <div className="mt-4 p-4 rounded-xl text-sm" style={{ background: '#fef3c7', color: '#92400e', fontFamily: 'Sarabun, sans-serif' }}>
-        ⚠️ ขณะนี้รายชื่อผู้ใช้ถูกเก็บในหน่วยความจำชั่วคราว ในอนาคตจะเชื่อมต่อกับฐานข้อมูลจริง
+      <div className="mt-4 p-4 rounded-xl text-sm" style={{ background: '#f0fdf4', color: '#15803d', fontFamily: 'Sarabun, sans-serif' }}>
+        ✅ รายชื่อผู้ใช้จะถูกบันทึกถาวรเมื่อระบบตั้งค่า <code>DATABASE_URL</code> แล้ว
       </div>
     </div>
   );
@@ -1358,12 +1358,25 @@ export default function AdminSheets() {
   };
 
   const fetchData = async () => {
-    try {
-      const [bRes, rRes] = await Promise.all([api.get('/bookings'), api.get('/rooms')]);
-      setBookings(bRes.data.bookings || []);
-      setRooms(rRes.data.rooms || []);
-    } catch { showToast('ไม่สามารถโหลดข้อมูลได้', 'error'); }
-    finally { setLoading(false); }
+    const [bookingsResult, roomsResult] = await Promise.allSettled([
+      api.get('/bookings'),
+      api.get('/rooms')
+    ]);
+
+    if (bookingsResult.status === 'fulfilled') {
+      setBookings(bookingsResult.value.data.bookings || []);
+    } else {
+      setBookings([]);
+      showToast('ไม่สามารถโหลดข้อมูลการจองได้', 'error');
+    }
+
+    if (roomsResult.status === 'fulfilled') {
+      setRooms(roomsResult.value.data.rooms || []);
+    } else {
+      showToast('ไม่สามารถโหลดข้อมูลห้องประชุมได้', 'error');
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => { if (authed) fetchData(); }, [authed]);
@@ -1404,7 +1417,7 @@ export default function AdminSheets() {
           <div className="text-center mb-8">
             <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center p-1.5"
               style={{ background: 'white', boxShadow: '0 4px 15px rgba(20,184,166,0.3)', border: '2px solid #14b8a6' }}>
-              <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" width="80" height="80" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <h1 className="font-bold text-2xl text-gray-800" style={{ fontFamily: 'Prompt, sans-serif' }}>ผู้ดูแลระบบ</h1>
             <p className="text-gray-400 text-sm mt-1" style={{ fontFamily: 'Sarabun, sans-serif' }}>เทศบาลตำบลบ้านคลอง · ระบบจัดการห้องประชุม</p>
@@ -1469,7 +1482,7 @@ export default function AdminSheets() {
             <button onClick={() => navigate('/')} className="flex items-center gap-3 cursor-pointer bg-transparent border-none text-white flex-shrink-0">
               <div className="w-11 h-11 rounded-xl flex items-center justify-center p-1 flex-shrink-0"
                 style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)' }}>
-                <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" width="40" height="40" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div className="text-left hidden sm:block">
                 <div className="font-bold text-[18px] leading-tight" style={{ fontFamily: 'Prompt, sans-serif' }}>ทต.บ้านคลอง · Admin</div>

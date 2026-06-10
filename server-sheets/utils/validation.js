@@ -23,7 +23,7 @@ function validateBookingBody(body) {
     const durationMin = (eh * 60 + em) - (sh * 60 + sm);
 
     if (durationMin <= 0) errors.push('เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม');
-    if (durationMin > 240) errors.push('ระยะเวลาจองสูงสุด 4 ชั่วโมง');
+    if (durationMin > 480) errors.push('ระยะเวลาจองสูงสุด 8 ชั่วโมง');
   }
 
   if (date) {

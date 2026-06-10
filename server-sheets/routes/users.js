@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const postgresDb = require('../services/postgresDb');
 const supabaseDb = require('../services/supabaseDb');
 
 const router = express.Router();
@@ -28,6 +29,12 @@ function normalizeUser(user) {
   };
 }
 
+function userStore() {
+  if (postgresDb.isEnabled()) return postgresDb;
+  if (supabaseDb.isEnabled()) return supabaseDb;
+  return null;
+}
+
 async function hashPassword(password) {
   if (!password) return null;
   return bcrypt.hash(String(password), 10);
@@ -35,9 +42,8 @@ async function hashPassword(password) {
 
 router.get('/', async (_req, res) => {
   try {
-    const users = supabaseDb.isEnabled()
-      ? await supabaseDb.getAdminUsers()
-      : USERS.map(normalizeUser);
+    const store = userStore();
+    const users = store ? await store.getAdminUsers() : USERS.map(normalizeUser);
 
     res.json({ ok: true, users });
   } catch (err) {
@@ -53,8 +59,9 @@ router.post('/', async (req, res) => {
     }
 
     const normalizedUsername = String(username).trim().toLowerCase();
-    const existing = supabaseDb.isEnabled()
-      ? await supabaseDb.getAdminUserByLogin(normalizedUsername)
+    const store = userStore();
+    const existing = store
+      ? await store.getAdminUserByLogin(normalizedUsername)
       : USERS.find(user => user.username === normalizedUsername);
 
     if (existing) {
@@ -62,8 +69,8 @@ router.post('/', async (req, res) => {
     }
 
     const passwordHash = await hashPassword(password);
-    const user = supabaseDb.isEnabled()
-      ? await supabaseDb.createAdminUser({ name, username: normalizedUsername, role, passwordHash })
+    const user = store
+      ? await store.createAdminUser({ name, username: normalizedUsername, role, passwordHash })
       : normalizeUser({
         id: `u${Date.now()}`,
         name: String(name).trim(),
@@ -74,7 +81,7 @@ router.post('/', async (req, res) => {
         createdAt: new Date().toISOString()
       });
 
-    if (!supabaseDb.isEnabled()) USERS.push(user);
+    if (!store) USERS.push(user);
     res.status(201).json({ ok: true, message: 'เพิ่มผู้ใช้สำเร็จ', user });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
@@ -89,8 +96,9 @@ router.put('/:id', async (req, res) => {
     if (req.body.role !== undefined) fields.role = req.body.role;
     if (req.body.password) fields.passwordHash = await hashPassword(req.body.password);
 
-    if (supabaseDb.isEnabled()) {
-      const user = await supabaseDb.updateAdminUser(req.params.id, fields);
+    const store = userStore();
+    if (store) {
+      const user = await store.updateAdminUser(req.params.id, fields);
       return res.json({ ok: true, message: 'แก้ไขผู้ใช้สำเร็จ', user });
     }
 
@@ -107,8 +115,9 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    if (supabaseDb.isEnabled()) {
-      await supabaseDb.deleteAdminUser(req.params.id);
+    const store = userStore();
+    if (store) {
+      await store.deleteAdminUser(req.params.id);
       return res.json({ ok: true, message: 'ลบผู้ใช้สำเร็จ', id: req.params.id });
     }
 

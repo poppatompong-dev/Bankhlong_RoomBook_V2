@@ -1,10 +1,11 @@
 /**
- * Rooms list — mutable in-memory store with full CRUD.
- * Seeded with default rooms on startup.
+ * Rooms list with full CRUD.
+ * Uses Postgres/Supabase when configured, otherwise falls back to defaults.
  */
 
 const express = require('express');
 const router = express.Router();
+const postgresDb = require('../services/postgresDb');
 const supabaseDb = require('../services/supabaseDb');
 
 let ROOMS = [
@@ -19,10 +20,17 @@ function genRoomId() {
   return 'r' + Math.random().toString(36).slice(2, 8);
 }
 
+function roomStore() {
+  if (postgresDb.isEnabled()) return postgresDb;
+  if (supabaseDb.isEnabled()) return supabaseDb;
+  return null;
+}
+
 // GET /api/rooms
 router.get('/', async (req, res) => {
   try {
-    const rooms = supabaseDb.isEnabled() ? await supabaseDb.getRooms() : ROOMS;
+    const store = roomStore();
+    const rooms = store ? await store.getRooms() : ROOMS;
     res.json({ ok: true, rooms });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
@@ -36,7 +44,8 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ ok: false, message: 'กรุณากรอก ชื่อห้อง, ความจุ, และชั้น' });
   }
   try {
-    const rooms = supabaseDb.isEnabled() ? await supabaseDb.getRooms() : ROOMS;
+    const store = roomStore();
+    const rooms = store ? await store.getRooms() : ROOMS;
     if (rooms.find(r => r.name === name.trim())) {
       return res.status(409).json({ ok: false, message: 'ชื่อห้องนี้มีอยู่แล้ว' });
     }
@@ -48,8 +57,8 @@ router.post('/', async (req, res) => {
       floor: String(floor).trim(),
       location
     };
-    const saved = supabaseDb.isEnabled() ? await supabaseDb.createRoom(room) : room;
-    if (!supabaseDb.isEnabled()) ROOMS.push(saved);
+    const saved = store ? await store.createRoom(room) : room;
+    if (!store) ROOMS.push(saved);
     console.log(`✅ Room created: ${saved.name}`);
     res.status(201).json({ ok: true, message: 'เพิ่มห้องประชุมสำเร็จ', room: saved });
   } catch (err) {
@@ -60,7 +69,8 @@ router.post('/', async (req, res) => {
 // PUT /api/rooms/:id — update room
 router.put('/:id', async (req, res) => {
   try {
-    const rooms = supabaseDb.isEnabled() ? await supabaseDb.getRooms() : ROOMS;
+    const store = roomStore();
+    const rooms = store ? await store.getRooms() : ROOMS;
     const idx = rooms.findIndex(r => r.id === req.params.id);
     if (idx === -1) return res.status(404).json({ ok: false, message: 'ไม่พบห้อง' });
     const { name, capacity, icon, floor, location, isActive } = req.body;
@@ -75,10 +85,10 @@ router.put('/:id', async (req, res) => {
       ...(location !== undefined && { location }),
       ...(isActive !== undefined && { isActive }),
     };
-    const updated = supabaseDb.isEnabled()
-      ? await supabaseDb.updateRoom(req.params.id, fields)
+    const updated = store
+      ? await store.updateRoom(req.params.id, fields)
       : { ...ROOMS[idx], ...fields };
-    if (!supabaseDb.isEnabled()) ROOMS[idx] = updated;
+    if (!store) ROOMS[idx] = updated;
     console.log(`✅ Room updated: ${updated.name}`);
     res.json({ ok: true, message: 'แก้ไขห้องประชุมสำเร็จ', room: updated });
   } catch (err) {
@@ -88,12 +98,13 @@ router.put('/:id', async (req, res) => {
 
 // DELETE /api/rooms/:id — delete room
 router.delete('/:id', async (req, res) => {
-  const rooms = supabaseDb.isEnabled() ? await supabaseDb.getRooms() : ROOMS;
+  const store = roomStore();
+  const rooms = store ? await store.getRooms() : ROOMS;
   const idx = rooms.findIndex(r => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ ok: false, message: 'ไม่พบห้อง' });
   try {
     const room = rooms[idx];
-    if (supabaseDb.isEnabled()) await supabaseDb.deleteRoom(req.params.id);
+    if (store) await store.deleteRoom(req.params.id);
     else ROOMS.splice(idx, 1);
     console.log(`✅ Room deleted: ${room.name}`);
     res.json({ ok: true, message: 'ลบห้องประชุมสำเร็จ', id: req.params.id });
@@ -105,7 +116,8 @@ router.delete('/:id', async (req, res) => {
 // GET /api/rooms/:id/availability?date=YYYY-MM-DD
 router.get('/:id/availability', async (req, res) => {
   try {
-    const rooms = supabaseDb.isEnabled() ? await supabaseDb.getRooms() : ROOMS;
+    const store = roomStore();
+    const rooms = store ? await store.getRooms() : ROOMS;
     const room = rooms.find(r => r.id === req.params.id);
     if (!room) return res.status(404).json({ ok: false, message: 'ไม่พบห้อง' });
 

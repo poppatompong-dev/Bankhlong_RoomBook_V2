@@ -9,6 +9,7 @@
  */
 
 const { google } = require('googleapis');
+const postgresDb = require('./postgresDb');
 const supabaseDb = require('./supabaseDb');
 
 // ─── Column map ────────────────────────────────────────────────────────────
@@ -36,6 +37,12 @@ let _cache = {
 let _sheetsAuth = null;
 let _sheetsClient = null;
 let _calendarClient = null;
+
+function ensureSheetConfigured() {
+  if (!process.env.SHEET_ID) {
+    throw new Error('DATABASE_URL or SHEET_ID is required for bookings storage');
+  }
+}
 
 // ─── Authentication ─────────────────────────────────────────────────────────
 function getAuth() {
@@ -131,6 +138,11 @@ function bookingToRow(booking) {
 
 // ─── Sheet initialization (ensure header row) ───────────────────────────────
 async function ensureHeaders() {
+  if (postgresDb.isEnabled()) {
+    await postgresDb.getAllBookings();
+    console.log('✅ Postgres connection verified');
+    return;
+  }
   if (supabaseDb.isEnabled()) {
     await supabaseDb.getAllBookings();
     console.log('✅ Supabase connection verified');
@@ -140,6 +152,7 @@ async function ensureHeaders() {
     console.log('✅ [MOCK] Sheet headers initialized');
     return;
   }
+  ensureSheetConfigured();
   const sheets = getSheetsClient();
   const range = `${process.env.SHEET_NAME}!A1:J1`;
 
@@ -165,6 +178,16 @@ async function ensureHeaders() {
 async function getAllBookings(forceRefresh = false) {
   const now = Date.now();
 
+  if (postgresDb.isEnabled()) {
+    if (!forceRefresh && (now - _cache.lastFetched) < _cache.ttl) {
+      return _cache.data;
+    }
+    _cache.data = await postgresDb.getAllBookings();
+    _cache.lastFetched = now;
+    console.log(`🟢 Postgres cache refreshed: ${_cache.data.length} bookings`);
+    return _cache.data;
+  }
+
   if (supabaseDb.isEnabled()) {
     if (!forceRefresh && (now - _cache.lastFetched) < _cache.ttl) {
       return _cache.data;
@@ -185,6 +208,7 @@ async function getAllBookings(forceRefresh = false) {
   }
 
   try {
+    ensureSheetConfigured();
     const sheets = getSheetsClient();
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.SHEET_ID,
@@ -221,6 +245,12 @@ function invalidateCache() {
 
 // ─── Append a new booking row ────────────────────────────────────────────────
 async function appendBooking(booking) {
+  if (postgresDb.isEnabled()) {
+    const saved = await postgresDb.appendBooking(booking);
+    _cache.data.push(saved);
+    console.log(`✅ [POSTGRES] Appended booking: ${saved.id}`);
+    return saved;
+  }
   if (supabaseDb.isEnabled()) {
     const saved = await supabaseDb.appendBooking(booking);
     _cache.data.push(saved);
@@ -232,6 +262,7 @@ async function appendBooking(booking) {
     console.log(`✅ [MOCK] Appended booking: ${booking.id}`);
     return booking;
   }
+  ensureSheetConfigured();
   const sheets = getSheetsClient();
   const row = bookingToRow(booking);
 
@@ -252,6 +283,7 @@ async function appendBooking(booking) {
 
 // ─── Find row number for a booking ID ───────────────────────────────────────
 async function findRowNumber(bookingId) {
+  ensureSheetConfigured();
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.SHEET_ID,
@@ -267,6 +299,13 @@ async function findRowNumber(bookingId) {
 
 // ─── Update status of a booking ─────────────────────────────────────────────
 async function updateBookingStatus(bookingId, newStatus) {
+  if (postgresDb.isEnabled()) {
+    const updated = await postgresDb.updateBookingStatus(bookingId, newStatus);
+    const idx = _cache.data.findIndex(b => b.id === bookingId);
+    if (idx !== -1) _cache.data[idx] = updated;
+    console.log(`✅ [POSTGRES] Updated booking ${bookingId} status → ${newStatus}`);
+    return updated;
+  }
   if (supabaseDb.isEnabled()) {
     const updated = await supabaseDb.updateBookingStatus(bookingId, newStatus);
     const idx = _cache.data.findIndex(b => b.id === bookingId);
@@ -377,6 +416,13 @@ async function deleteCalendarEvent(eventId) {
 
 // ─── Update full booking row ─────────────────────────────────────────────────
 async function updateBooking(bookingId, fields) {
+  if (postgresDb.isEnabled()) {
+    const updated = await postgresDb.updateBooking(bookingId, fields);
+    const idx = _cache.data.findIndex(b => b.id === bookingId);
+    if (idx !== -1) _cache.data[idx] = updated;
+    console.log(`✅ [POSTGRES] Updated booking ${bookingId}`);
+    return updated;
+  }
   if (supabaseDb.isEnabled()) {
     const updated = await supabaseDb.updateBooking(bookingId, fields);
     const idx = _cache.data.findIndex(b => b.id === bookingId);
@@ -414,6 +460,13 @@ async function updateBooking(bookingId, fields) {
 
 // ─── Delete a booking row ─────────────────────────────────────────────────────
 async function deleteBooking(bookingId) {
+  if (postgresDb.isEnabled()) {
+    await postgresDb.deleteBooking(bookingId);
+    const idx = _cache.data.findIndex(b => b.id === bookingId);
+    if (idx !== -1) _cache.data.splice(idx, 1);
+    console.log(`✅ [POSTGRES] Deleted booking ${bookingId}`);
+    return true;
+  }
   if (supabaseDb.isEnabled()) {
     await supabaseDb.deleteBooking(bookingId);
     const idx = _cache.data.findIndex(b => b.id === bookingId);
