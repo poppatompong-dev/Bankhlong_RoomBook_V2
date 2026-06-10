@@ -8,8 +8,8 @@ import { formatDateTH, getStatusBadge } from '../utils/helpers';
 function ConfirmModal({ options, onClose }) {
   if (!options) return null;
   const confirmClasses = options.isDanger
-    ? 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-200'
-    : 'bg-teal-700 text-white hover:bg-teal-800 focus-visible:ring-teal-200';
+    ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 focus-visible:ring-red-200'
+    : 'bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 focus-visible:ring-teal-200';
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
@@ -24,7 +24,7 @@ function ConfirmModal({ options, onClose }) {
           <p className="text-gray-700 text-sm whitespace-pre-line text-center mb-6" style={{fontFamily: 'Sarabun'}}>{options.message}</p>
           <div className="flex gap-3 justify-end">
             <button type="button" className="btn-secondary flex-1" onClick={onClose}>ยกเลิก</button>
-            <button type="button" className={`flex-1 inline-flex items-center justify-center font-semibold py-2.5 px-4 rounded-lg border-none cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-4 ${confirmClasses}`}
+            <button type="button" className={`flex-1 inline-flex items-center justify-center font-semibold py-2.5 px-4 rounded-lg cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-4 ${confirmClasses}`}
               onClick={() => { options.onConfirm(); onClose(); }}>
               ยืนยัน
             </button>

@@ -422,9 +422,9 @@ function TabBookings({ bookings, rooms, loading, onRefresh, showToast }) {
               { icon: '✕', label: 'ล้างทุกตัวกรอง', action: () => { setFilterStatus(''); setFilterDate(''); setFilterRoom(''); setSearch(''); } },
             ].map(btn => (
               <button key={btn.label} onClick={btn.action}
-                style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer', fontSize: 12, fontFamily: 'Sarabun,sans-serif', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.28)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}>
+                style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid rgba(255,255,255,0.65)', background: 'rgba(255,255,255,0.94)', color: '#0f766e', cursor: 'pointer', fontSize: 12, fontFamily: 'Sarabun,sans-serif', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#115e59'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.94)'; e.currentTarget.style.color = '#0f766e'; }}>
                 {btn.icon} {btn.label}
               </button>
             ))}
