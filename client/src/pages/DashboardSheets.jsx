@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Calendar from '../components/calendar/Calendar';
 import BookingFormSheets from '../components/booking/BookingFormSheets';
+import SystemStatusBadge from '../components/layout/SystemStatusBadge';
 import { formatDateTH, today } from '../utils/helpers';
 import logo from '../assets/logo.png';
 
@@ -83,10 +84,7 @@ function DashHeader({ navigate }) {
 
           {/* Right */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse"></div>
-              <span className="text-xs opacity-85 hidden sm:inline" style={{ fontFamily: 'Sarabun, sans-serif' }}>Live</span>
-            </div>
+            <SystemStatusBadge className="hidden sm:flex" />
             <button onClick={() => navigate('/admin')}
               className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all border-none text-white"
               style={{ background: 'rgba(255,255,255,0.15)', fontFamily: 'Sarabun, sans-serif' }}

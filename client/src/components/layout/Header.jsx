@@ -1,11 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSocket } from '../../contexts/SocketContext';
+import SystemStatusBadge from './SystemStatusBadge';
 import logo from '../../assets/logo.png';
 
 export default function Header() {
   const { user, logout, isAdmin } = useAuth();
-  const { connected } = useSocket();
   const location = useLocation();
 
   const NAV_ITEMS = [
@@ -50,10 +49,7 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-300 animate-pulse' : 'bg-red-400'}`}></div>
-            <span className="text-xs opacity-85">{connected ? 'Live' : 'Offline'}</span>
-          </div>
+          <SystemStatusBadge />
           {user ? (
             <>
               <div className="hidden sm:flex items-center gap-2">
