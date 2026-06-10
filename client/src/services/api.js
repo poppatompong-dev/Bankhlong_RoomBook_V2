@@ -35,6 +35,11 @@ export const authAPI = {
   me: () => api.get('/auth/me')
 };
 
+// Health
+export const healthAPI = {
+  get: () => api.get('/health')
+};
+
 // Rooms
 export const roomsAPI = {
   list: () => api.get('/rooms'),
