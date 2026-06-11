@@ -49,6 +49,14 @@ export const roomsAPI = {
   delete: (id) => api.delete(`/rooms/${id}`)
 };
 
+// Room layouts
+export const roomLayoutsAPI = {
+  list: (params = {}) => api.get('/room-layouts', { params }),
+  create: (data) => api.post('/room-layouts', data),
+  update: (id, data) => api.put(`/room-layouts/${id}`, data),
+  delete: (id) => api.delete(`/room-layouts/${id}`)
+};
+
 // Bookings
 export const bookingsAPI = {
   list: (params = {}) => api.get('/bookings', { params }),

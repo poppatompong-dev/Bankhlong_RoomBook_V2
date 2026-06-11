@@ -8,6 +8,7 @@ const bookingsRouter = require('./routes/bookings');
 const roomsRouter = require('./routes/rooms');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
+const roomLayoutsRouter = require('./routes/roomLayouts');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -43,6 +44,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/bookings', bookingsRouter);
 app.use('/api/rooms', roomsRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/room-layouts', roomLayoutsRouter);
 
 // Health check
 app.get('/api/health', async (req, res) => {

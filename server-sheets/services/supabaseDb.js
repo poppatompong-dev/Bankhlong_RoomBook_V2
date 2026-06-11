@@ -3,6 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 const ROOM_COLUMNS = 'id,name,capacity,icon,floor,location,is_active,created_at,updated_at';
 const BOOKING_COLUMNS = 'id,name,phone,dept,room,booking_date,start_time,end_time,purpose,status,activity,attendees,equipment,additional_services,metadata,created_at,updated_at';
 const ADMIN_USER_COLUMNS = 'id,username,name,role,password_hash,created_at,updated_at';
+const ROOM_LAYOUT_COLUMNS = 'id,label,icon,sort_order,is_active,created_at,updated_at';
 
 let client = null;
 
@@ -102,6 +103,38 @@ function toAdminUser(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+}
+
+function toRoomLayout(row) {
+  return {
+    id: row.id,
+    _id: row.id,
+    label: row.label,
+    icon: row.icon || '▦',
+    sortOrder: row.sort_order || 0,
+    isActive: row.is_active !== false,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function fromRoomLayout(layout) {
+  return {
+    id: layout.id,
+    label: String(layout.label || '').trim(),
+    icon: layout.icon || '▦',
+    sort_order: Number(layout.sortOrder) || 0,
+    is_active: layout.isActive !== false
+  };
+}
+
+function mapRoomLayoutFields(fields) {
+  const mapped = {};
+  if (fields.label !== undefined) mapped.label = String(fields.label).trim();
+  if (fields.icon !== undefined) mapped.icon = fields.icon || '▦';
+  if (fields.sortOrder !== undefined) mapped.sort_order = Number(fields.sortOrder) || 0;
+  if (fields.isActive !== undefined) mapped.is_active = fields.isActive !== false;
+  return mapped;
 }
 
 function fromAdminUser(user) {
@@ -296,6 +329,43 @@ async function deleteAdminUser(id) {
   return true;
 }
 
+async function getRoomLayouts() {
+  const { data, error } = await getClient()
+    .from('room_layouts')
+    .select(ROOM_LAYOUT_COLUMNS)
+    .order('sort_order', { ascending: true })
+    .order('label', { ascending: true });
+  throwIfError(error);
+  return (data || []).map(toRoomLayout);
+}
+
+async function createRoomLayout(layout) {
+  const { data, error } = await getClient()
+    .from('room_layouts')
+    .insert(fromRoomLayout(layout))
+    .select(ROOM_LAYOUT_COLUMNS)
+    .single();
+  throwIfError(error);
+  return toRoomLayout(data);
+}
+
+async function updateRoomLayout(id, fields) {
+  const { data, error } = await getClient()
+    .from('room_layouts')
+    .update(mapRoomLayoutFields(fields))
+    .eq('id', id)
+    .select(ROOM_LAYOUT_COLUMNS)
+    .single();
+  throwIfError(error);
+  return toRoomLayout(data);
+}
+
+async function deleteRoomLayout(id) {
+  const { error } = await getClient().from('room_layouts').delete().eq('id', id);
+  throwIfError(error);
+  return true;
+}
+
 module.exports = {
   isEnabled,
   getClient,
@@ -312,5 +382,9 @@ module.exports = {
   getAdminUserByLogin,
   createAdminUser,
   updateAdminUser,
-  deleteAdminUser
+  deleteAdminUser,
+  getRoomLayouts,
+  createRoomLayout,
+  updateRoomLayout,
+  deleteRoomLayout
 };

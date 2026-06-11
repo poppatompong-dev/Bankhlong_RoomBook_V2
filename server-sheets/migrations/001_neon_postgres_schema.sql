@@ -34,6 +34,18 @@ create table if not exists bookings (
 create index if not exists bookings_date_room_idx on bookings (booking_date, room);
 create index if not exists bookings_status_idx on bookings (status);
 
+create table if not exists room_layouts (
+  id text primary key,
+  label text not null,
+  icon text not null default '▦',
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists room_layouts_active_sort_idx on room_layouts (is_active, sort_order);
+
 create table if not exists admin_users (
   id text primary key,
   username text not null unique,
@@ -55,4 +67,14 @@ on conflict (id) do nothing;
 
 insert into admin_users (id, username, name, role, password_hash)
 values ('u1', 'admin', 'ผู้ดูแลระบบ', 'admin', null)
+on conflict (id) do nothing;
+
+insert into room_layouts (id, label, icon, sort_order)
+values
+  ('classroom', 'ห้องเรียน (Classroom)', '🎓', 10),
+  ('conference', 'ประชุมกลุ่ม (Conference)', '🪑', 20),
+  ('ushape', 'ยู-เชฟ (U-Shape)', '🔵', 30),
+  ('theater', 'เธียเตอร์ (Theater)', '🎭', 40),
+  ('banquet', 'แบงควิต (Banquet)', '🍽️', 50),
+  ('other', 'อื่นๆ (ระบุ)', '📐', 60)
 on conflict (id) do nothing;

@@ -29,6 +29,7 @@ function embeddedSheetsApi() {
       const sheetsBookingsRouter = require('../server-sheets/routes/bookings')
       const sheetsRoomsRouter = require('../server-sheets/routes/rooms')
       const sheetsUsersRouter = require('../server-sheets/routes/users')
+      const sheetsRoomLayoutsRouter = require('../server-sheets/routes/roomLayouts')
       const sheets = require('../server-sheets/services/sheets')
       const databaseMode = require('../server-sheets/services/databaseMode')
 
@@ -53,6 +54,7 @@ function embeddedSheetsApi() {
       server.middlewares.use('/api/bookings', sheetsBookingsRouter)
       server.middlewares.use('/api/rooms', sheetsRoomsRouter)
       server.middlewares.use('/api/users', sheetsUsersRouter)
+      server.middlewares.use('/api/room-layouts', sheetsRoomLayoutsRouter)
       server.middlewares.use('/api/health', async (req, res) => {
         let bookings = []
         let status = 'healthy'
