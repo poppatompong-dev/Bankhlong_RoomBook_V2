@@ -33,7 +33,7 @@ async function run() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: 'สมชาย ใจดี', phone: '081-234-5678',
-      room: 'ห้องมณีจันทรา', date: '2026-04-01',
+      room: 'ห้องมณีจันทรา', date: '2027-04-01',
       startTime: '09:00', endTime: '11:00', purpose: 'ประชุมแผนงาน'
     })
   }).then(r => r.json());
@@ -49,34 +49,33 @@ async function run() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: 'มานะ อดทน', phone: '089-000-0000',
-      room: 'ห้องมณีจันทรา', date: '2026-04-01',
+      room: 'ห้องมณีจันทรา', date: '2027-04-01',
       startTime: '10:00', endTime: '12:00', purpose: 'ซ้อนทับ'
     })
   }).then(r => r.json());
   ok('Returns ok:false (409)',    ov.ok === false);
   ok('Thai error message',       ov.message?.includes('ถูกจองแล้ว'));
 
-  // ── Max-8h validation ───────────────────────────────────────────────
-  console.log('\n5️⃣  Validation – over 8 hours (rejected)');
-  const maxH = await fetch(`${API}/bookings`, {
+  // ── All-day validation ───────────────────────────────────────────────
+  console.log('\n5️⃣  Validation – all-day booking (accepted)');
+  const allDay = await fetch(`${API}/bookings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: 'Test', phone: '000-000-0000',
-      room: 'ห้องชัยบุรี', date: '2026-04-02',
-      startTime: '08:00', endTime: '17:30', purpose: 'เกิน 8 ชั่วโมง'
+      room: 'ห้องชัยบุรี', date: '2027-04-02',
+      startTime: '07:00', endTime: '20:00', purpose: 'ประชุมทั้งวัน'
     })
   }).then(r => r.json());
-  ok('Returns ok:false (>8h)',    maxH.ok === false);
-  ok('Thai error message',       maxH.errors?.some(e => e.includes('8 ชั่วโมง')));
+  ok('Returns ok:true (all-day)', allDay.ok === true, allDay.message);
 
   // ── Availability check ──────────────────────────────────────────────
   console.log('\n6️⃣  Availability check');
   const busyRoom = encodeURIComponent('ห้องมณีจันทรา');
-  const avBusy = await fetch(`${API}/bookings/check-availability?room=${busyRoom}&date=2026-04-01&startTime=09:30&endTime=10:30`).then(r => r.json());
+  const avBusy = await fetch(`${API}/bookings/check-availability?room=${busyRoom}&date=2027-04-01&startTime=09:30&endTime=10:30`).then(r => r.json());
   ok('Slot 09:30-10:30 is busy',   avBusy.available === false);
 
-  const avFree = await fetch(`${API}/bookings/check-availability?room=${busyRoom}&date=2026-04-01&startTime=11:00&endTime=13:00`).then(r => r.json());
+  const avFree = await fetch(`${API}/bookings/check-availability?room=${busyRoom}&date=2027-04-01&startTime=11:00&endTime=13:00`).then(r => r.json());
   ok('Slot 11:00-13:00 is free',   avFree.available === true);
 
   // ── Booking list ─────────────────────────────────────────────────────
@@ -84,7 +83,7 @@ async function run() {
   const list = await fetch(`${API}/bookings`).then(r => r.json());
   ok('Has 1 confirmed booking',    list.bookings.filter(b => b.status === 'confirmed').length === 1);
 
-  const filtered = await fetch(`${API}/bookings?date=2026-04-01`).then(r => r.json());
+  const filtered = await fetch(`${API}/bookings?date=2027-04-01`).then(r => r.json());
   ok('Filter by date works',       filtered.bookings.length === 1);
 
   // ── Cancel booking ────────────────────────────────────────────────────

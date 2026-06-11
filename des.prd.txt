@@ -60,7 +60,7 @@ Required fields:
 
 Validation rules:
 - End time must be after start time
-- Maximum booking duration is 4 hours
+- No fixed maximum duration within the same day; all-day bookings are allowed when the room is available
 - Past dates cannot be booked
 - Overlapping bookings for the same room/date/time are not allowed
 
