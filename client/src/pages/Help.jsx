@@ -38,7 +38,7 @@ const USER_GUIDE = [
     steps: [
       'ผู้จองต้องรับผิดชอบดูแลความเรียบร้อยระหว่างและหลังการใช้งาน',
       'ต้องแจ้งยกเลิกล่วงหน้าอย่างน้อย 1 ชั่วโมง กรณีไม่ใช้งาน',
-      'จองได้สูงสุด 8 ชั่วโมงต่อครั้ง',
+      'จองต่อเนื่องทั้งวันได้ หากช่วงเวลานั้นไม่มีการจองซ้อนทับ',
       'ปิดไฟ-แอร์ และนำอุปกรณ์ที่นำมาเองออกให้ครบหลังเสร็จงาน',
       'หากมีปัญหาเร่งด่วน ติดต่อเจ้าหน้าที่ได้โดยตรง',
     ],
@@ -164,7 +164,7 @@ export default function Help() {
             <button onClick={() => navigate('/')} className="flex items-center gap-2 bg-transparent border-none cursor-pointer text-white">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center p-1 flex-shrink-0"
                 style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(255,255,255,0.3)' }}>
-                <img src={logo} alt="โลโก้" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" width="36" height="36" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div className="text-left hidden sm:block">
                 <div className="font-bold text-base leading-tight" style={{ fontFamily: 'Prompt, sans-serif' }}>เทศบาลตำบลบ้านคลอง</div>

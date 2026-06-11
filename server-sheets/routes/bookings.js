@@ -235,12 +235,23 @@ router.post('/', async (req, res) => {
       id: genId(),
       name: name.trim(),
       phone: phone.trim(),
+      dept: req.body.dept?.trim?.() || '',
       room: room.trim(),
       date,
       startTime,
       endTime,
       purpose: purpose.trim(),
       status: 'confirmed',
+      activity: req.body.activity?.trim?.() || '',
+      attendees: Number(req.body.attendees) || 0,
+      equipment: req.body.equipment || {},
+      additionalServices: req.body.additionalServices || {},
+      roomLayout: req.body.roomLayout || '',
+      dressCode: req.body.dressCode || '',
+      restrictions: req.body.restrictions?.trim?.() || '',
+      setupBefore: Number(req.body.setupBefore) || 0,
+      cleanupAfter: Number(req.body.cleanupAfter) || 0,
+      attachments: req.body.attachments || undefined,
       createdAt: new Date().toISOString()
     };
 
@@ -267,12 +278,23 @@ router.put('/:id', async (req, res) => {
     const fields = {};
     if (name) fields.name = name.trim();
     if (phone) fields.phone = phone.trim();
+    if (req.body.dept !== undefined) fields.dept = req.body.dept?.trim?.() || '';
     if (room) fields.room = room.trim();
     if (date) fields.date = date;
     if (startTime) fields.startTime = startTime;
     if (endTime) fields.endTime = endTime;
     if (purpose) fields.purpose = purpose.trim();
     if (status) fields.status = status;
+    if (req.body.activity !== undefined) fields.activity = req.body.activity?.trim?.() || '';
+    if (req.body.attendees !== undefined) fields.attendees = Number(req.body.attendees) || 0;
+    if (req.body.equipment !== undefined) fields.equipment = req.body.equipment || {};
+    if (req.body.additionalServices !== undefined) fields.additionalServices = req.body.additionalServices || {};
+    if (req.body.roomLayout !== undefined) fields.roomLayout = req.body.roomLayout || '';
+    if (req.body.dressCode !== undefined) fields.dressCode = req.body.dressCode || '';
+    if (req.body.restrictions !== undefined) fields.restrictions = req.body.restrictions?.trim?.() || '';
+    if (req.body.setupBefore !== undefined) fields.setupBefore = Number(req.body.setupBefore) || 0;
+    if (req.body.cleanupAfter !== undefined) fields.cleanupAfter = Number(req.body.cleanupAfter) || 0;
+    if (req.body.attachments !== undefined) fields.attachments = req.body.attachments || [];
 
     // Check conflicts only if time/room changed
     if (room || date || startTime || endTime) {

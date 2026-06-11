@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const sheets = require('./services/sheets');
+const databaseMode = require('./services/databaseMode');
 const bookingsRouter = require('./routes/bookings');
 const roomsRouter = require('./routes/rooms');
 const authRouter = require('./routes/auth');
@@ -46,17 +47,24 @@ app.use('/api/users', usersRouter);
 // Health check
 app.get('/api/health', async (req, res) => {
   try {
+    const database = databaseMode.assertConfigured();
     const bookings = await sheets.getAllBookings();
     res.json({
       ok: true,
       status: 'healthy',
+      database,
       timestamp: new Date().toISOString(),
       cachedBookings: bookings.length,
       sheet: process.env.SHEET_ID,
       sheetName: process.env.SHEET_NAME
     });
   } catch (err) {
-    res.status(500).json({ ok: false, status: 'unhealthy', error: err.message });
+    res.status(500).json({
+      ok: false,
+      status: 'unhealthy',
+      database: databaseMode.getDatabaseMode(),
+      error: err.message
+    });
   }
 });
 
@@ -82,9 +90,10 @@ async function start() {
   const PORT = process.env.PORT || 5001;
 
   try {
+    databaseMode.assertConfigured();
     // Ensure sheet has header row
     await sheets.ensureHeaders();
-    console.log('✅ Google Sheets connection verified');
+    console.log(`✅ ${databaseMode.getDatabaseMode()} connection verified`);
 
     // Pre-warm cache
     await sheets.getAllBookings(true);
@@ -99,9 +108,9 @@ async function start() {
     }, 7000);
 
     app.listen(PORT, () => {
-      console.log(`\n🚀 Sheets Backend ready!`);
+      console.log(`\n🚀 Meeting Room Backend ready!`);
       console.log(`📡 API: http://localhost:${PORT}/api`);
-      console.log(`📊 Sheet: https://docs.google.com/spreadsheets/d/${process.env.SHEET_ID}`);
+      console.log(`🗄️ Database: ${databaseMode.getDatabaseMode()}`);
       console.log(`🔄 Cache refresh: every 7 seconds\n`);
     });
   } catch (err) {

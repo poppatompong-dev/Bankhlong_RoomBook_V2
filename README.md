@@ -12,7 +12,7 @@
 |-------|-----------|
 | **Frontend** | React 18 + Vite + Tailwind CSS |
 | **Backend** | Node.js + Express |
-| **Database** | Google Sheets API (googleapis) |
+| **Database** | Neon Postgres (primary) + optional Google Sheets fallback |
 | **Deploy** | Vercel (Serverless Functions + Static) |
 
 ---
@@ -46,11 +46,14 @@ Copy `.env.example` → `server-sheets/.env` แล้วแก้ไข:
 
 ```env
 MOCK_DATABASE=false
+DATABASE_URL=postgresql://user:password@host/neondb?sslmode=require
 SHEET_ID=your_google_sheet_id
 SHEET_NAME=Booking-List3
 GOOGLE_SERVICE_ACCOUNT_KEY_FILE=./service-account.json
 ADMIN_PASSWORD=admin123
 ```
+
+> ใช้ `server-sheets/migrations/001_neon_postgres_schema.sql` สร้างตาราง `rooms`, `bookings`, และ `admin_users` ใน Neon ก่อน deploy/รัน production หรือรัน `npm run migrate:postgres` จากโฟลเดอร์ `server-sheets` หลังตั้งค่า `DATABASE_URL`
 
 ### 4. รันระบบ
 
@@ -85,9 +88,10 @@ git push origin main
 | Key | Value |
 |-----|-------|
 | `MOCK_DATABASE` | `false` |
-| `SHEET_ID` | `your_google_sheet_id` |
-| `SHEET_NAME` | `Booking-List3` |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | `{ ... }` (วาง JSON ทั้งก้อนของ service account key) |
+| `DATABASE_URL` | Neon pooled connection string |
+| `SHEET_ID` | optional: Google Sheet ID ถ้ายังใช้ Sheets integration |
+| `SHEET_NAME` | optional: `Booking-List3` |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | optional: `{ ... }` ถ้ายังใช้ Google Sheets/Calendar |
 | `ADMIN_USERNAME` | `admin` |
 | `ADMIN_PASSWORD` | `your_password` |
 

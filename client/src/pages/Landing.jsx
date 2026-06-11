@@ -25,7 +25,7 @@ export default function Landing() {
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center p-1"
             style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.35)' }}>
-            <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" width="40" height="40" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div className="text-white">
             <div className="font-bold text-base leading-tight" style={{ fontFamily: 'Prompt, sans-serif' }}>เทศบาลตำบลบ้านคลอง</div>
@@ -65,7 +65,7 @@ export default function Landing() {
             className="group flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-200 cursor-pointer border-none"
             style={{
               background: 'white',
-              color: '#0d9488',
+              color: '#0f766e',
               fontFamily: 'Sarabun, sans-serif',
               boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
               minWidth: '220px'
@@ -81,15 +81,15 @@ export default function Landing() {
             onClick={() => navigate('/admin')}
             className="group flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-200 cursor-pointer"
             style={{
-              background: 'rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.94)',
               backdropFilter: 'blur(10px)',
-              border: '2px solid rgba(255,255,255,0.4)',
-              color: 'white',
+              border: '2px solid rgba(255,255,255,0.55)',
+              color: '#0f766e',
               fontFamily: 'Sarabun, sans-serif',
               minWidth: '220px'
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.94)'; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
             <span className="text-2xl group-hover:scale-110 transition-transform">🛡️</span>
             <span>สำหรับผู้ดูแลระบบ</span>
@@ -99,15 +99,15 @@ export default function Landing() {
             onClick={() => navigate('/help')}
             className="group flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-200 cursor-pointer"
             style={{
-              background: 'rgba(255,255,255,0.1)',
+              background: 'rgba(248,250,252,0.92)',
               backdropFilter: 'blur(10px)',
-              border: '2px solid rgba(255,255,255,0.25)',
-              color: 'rgba(255,255,255,0.9)',
+              border: '2px solid rgba(255,255,255,0.45)',
+              color: '#334155',
               fontFamily: 'Sarabun, sans-serif',
               minWidth: '220px'
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(248,250,252,0.92)'; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
             <span className="text-2xl group-hover:scale-110 transition-transform">📖</span>
             <span>คู่มือการใช้งาน</span>

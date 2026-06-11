@@ -3,25 +3,28 @@ import { bookingsAPI, roomsAPI, usersAPI } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useSocket } from '../contexts/SocketContext';
 import { formatDateTH, getStatusBadge } from '../utils/helpers';
-import logo from '../assets/logo.png';
-
 // --- Modals ---
 
 function ConfirmModal({ options, onClose }) {
   if (!options) return null;
+  const confirmClasses = options.isDanger
+    ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 focus-visible:ring-red-200'
+    : 'bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 focus-visible:ring-teal-200';
+
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+      role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title"
       onMouseDown={e => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-slide-up">
         <div className={`p-4 flex justify-between items-center text-white ${options.isDanger ? 'bg-red-500' : 'bg-teal-600'}`}>
-          <h2 className="font-prompt text-base font-bold">{options.title}</h2>
-          <button onClick={onClose} className="text-white/80 hover:text-white text-xl border-none bg-transparent cursor-pointer">&times;</button>
+          <h2 id="confirm-modal-title" className="font-prompt text-base font-bold">{options.title}</h2>
+          <button type="button" aria-label="ปิดหน้าต่างยืนยัน" onClick={onClose} className="text-white/80 hover:text-white text-xl border-none bg-transparent cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded">&times;</button>
         </div>
         <div className="p-6">
           <p className="text-gray-700 text-sm whitespace-pre-line text-center mb-6" style={{fontFamily: 'Sarabun'}}>{options.message}</p>
           <div className="flex gap-3 justify-end">
-            <button className="btn-secondary flex-1" onClick={onClose}>ยกเลิก</button>
-            <button className={`flex-1 font-semibold py-2 px-4 rounded-lg text-white border-none cursor-pointer transition-colors ${options.isDanger ? 'bg-red-500 hover:bg-red-600' : 'bg-teal-600 hover:bg-teal-700'}`} 
+            <button type="button" className="btn-secondary flex-1" onClick={onClose}>ยกเลิก</button>
+            <button type="button" className={`flex-1 inline-flex items-center justify-center font-semibold py-2.5 px-4 rounded-lg cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-4 ${confirmClasses}`}
               onClick={() => { options.onConfirm(); onClose(); }}>
               ยืนยัน
             </button>
@@ -42,7 +45,7 @@ function ViewBookingModal({ booking, onClose }) {
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-slide-up">
         <div className="bg-gradient-to-r from-teal-600 to-teal-500 p-5 flex justify-between items-center text-white">
           <h2 className="font-prompt text-lg font-bold">📋 รายละเอียดการจอง</h2>
-          <button onClick={onClose} className="text-white/80 hover:text-white text-xl">&times;</button>
+          <button type="button" aria-label="ปิดรายละเอียดการจอง" onClick={onClose} className="text-white/80 hover:text-white text-xl border-none bg-transparent cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded">&times;</button>
         </div>
         <div className="p-6 overflow-y-auto max-h-[70vh] text-sm">
           <div className="grid grid-cols-2 gap-4 mb-4">
@@ -112,7 +115,7 @@ function RoomModal({ room, onSave, onClose, showToast }) {
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
         <div className={`p-5 flex justify-between items-center text-white ${isEdit ? 'bg-blue-600' : 'bg-teal-600'}`}>
           <h2 className="font-prompt text-lg font-bold">{isEdit ? '✏️ แก้ไขห้องประชุม' : '➕ เพิ่มห้องประชุมใหม่'}</h2>
-          <button onClick={onClose} className="text-white/80 hover:text-white text-xl">&times;</button>
+          <button type="button" aria-label="ปิดฟอร์มห้องประชุม" onClick={onClose} className="text-white/80 hover:text-white text-xl border-none bg-transparent cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6">
           <div className="mb-4">
@@ -134,6 +137,7 @@ function RoomModal({ room, onSave, onClose, showToast }) {
             <div className="flex flex-wrap gap-2">
               {['🏢', '💎', '🏛️', '⚔️', '💻', '🏟️', '⚡', '📊'].map(ic => (
                 <button type="button" key={ic} onClick={() => setForm({ ...form, icon: ic })}
+                  aria-label={`เลือกไอคอน ${ic}`}
                   className={`w-10 h-10 rounded-lg text-xl border-2 flex items-center justify-center ${form.icon === ic ? 'border-teal-500 bg-teal-50' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
                   {ic}
                 </button>
@@ -183,7 +187,7 @@ function UserModal({ user, onSave, onClose, showToast }) {
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
         <div className={`p-5 flex justify-between items-center text-white ${isEdit ? 'bg-blue-600' : 'bg-green-600'}`}>
           <h2 className="font-prompt text-lg font-bold">{isEdit ? '✏️ แก้ไขผู้ใช้' : '➕ เพิ่มผู้ใช้ใหม่'}</h2>
-          <button onClick={onClose} className="text-white/80 hover:text-white text-xl">&times;</button>
+          <button type="button" aria-label="ปิดฟอร์มผู้ใช้" onClick={onClose} className="text-white/80 hover:text-white text-xl border-none bg-transparent cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6">
           <div className="mb-4">
@@ -209,7 +213,7 @@ function UserModal({ user, onSave, onClose, showToast }) {
           </div>
           <div className="mb-6">
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase">รหัสผ่าน {isEdit ? '(เว้นว่างถ้าไม่เปลี่ยน)' : ''}</label>
-            <input type="password" className="form-control" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required={!isEdit} />
+            <input type="password" className="form-control" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required={!isEdit} autoComplete="new-password" />
           </div>
           <div className="flex gap-3">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">ยกเลิก</button>
@@ -247,21 +251,33 @@ export default function Admin() {
 
   const fetchData = async () => {
     setLoading(true);
-    try {
-      const [bRes, rRes, uRes] = await Promise.all([
-        bookingsAPI.list({ limit: 500 }),
-        roomsAPI.list(),
-        usersAPI.list()
-      ]);
-      setBookings(bRes.data.bookings || []);
-      setRooms(rRes.data.rooms || []);
-      setUsers(uRes.data.users || []);
-    } catch (err) {
-      const msg = err.response?.data?.message || 'ไม่สามารถโหลดข้อมูลได้';
-      showToast(msg, 'error');
-    } finally {
-      setLoading(false);
+    const [bookingsResult, roomsResult, usersResult] = await Promise.allSettled([
+      bookingsAPI.list({ limit: 500 }),
+      roomsAPI.list(),
+      usersAPI.list()
+    ]);
+
+    if (bookingsResult.status === 'fulfilled') {
+      setBookings(bookingsResult.value.data.bookings || []);
+    } else {
+      setBookings([]);
+      showToast('ไม่สามารถโหลดข้อมูลการจองได้', 'error');
     }
+
+    if (roomsResult.status === 'fulfilled') {
+      setRooms(roomsResult.value.data.rooms || []);
+    } else {
+      showToast('ไม่สามารถโหลดข้อมูลห้องประชุมได้', 'error');
+    }
+
+    if (usersResult.status === 'fulfilled') {
+      setUsers(usersResult.value.data.users || []);
+    } else {
+      setUsers([]);
+      showToast('ไม่สามารถโหลดข้อมูลผู้ใช้ได้', 'error');
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, []);

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Calendar from '../components/calendar/Calendar';
 import BookingFormSheets from '../components/booking/BookingFormSheets';
+import SystemStatusBadge from '../components/layout/SystemStatusBadge';
 import { formatDateTH, today } from '../utils/helpers';
 import logo from '../assets/logo.png';
 
@@ -73,7 +74,7 @@ function DashHeader({ navigate }) {
           <button onClick={() => navigate('/')} className="flex items-center gap-3 cursor-pointer bg-transparent border-none text-white flex-shrink-0">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center p-1 flex-shrink-0"
               style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)' }}>
-              <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" width="40" height="40" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div className="text-left hidden sm:block">
               <div className="font-bold text-[18px] leading-tight" style={{ fontFamily: 'Prompt, sans-serif' }}>เทศบาลตำบลบ้านคลอง</div>
@@ -83,10 +84,7 @@ function DashHeader({ navigate }) {
 
           {/* Right */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse"></div>
-              <span className="text-xs opacity-85 hidden sm:inline" style={{ fontFamily: 'Sarabun, sans-serif' }}>Live</span>
-            </div>
+            <SystemStatusBadge className="hidden sm:flex" />
             <button onClick={() => navigate('/admin')}
               className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all border-none text-white"
               style={{ background: 'rgba(255,255,255,0.15)', fontFamily: 'Sarabun, sans-serif' }}
@@ -334,18 +332,25 @@ export default function DashboardSheets() {
   };
 
   const fetchData = useCallback(async () => {
-    try {
-      const [roomsRes, bookingsRes] = await Promise.all([
-        api.get('/rooms'),
-        api.get('/bookings'),
-      ]);
-      setRooms(roomsRes.data.rooms || []);
-      setAllBookings(bookingsRes.data.bookings || []);
-    } catch {
-      showToast('ไม่สามารถโหลดข้อมูลได้', 'error');
-    } finally {
-      setLoading(false);
+    const [roomsResult, bookingsResult] = await Promise.allSettled([
+      api.get('/rooms'),
+      api.get('/bookings'),
+    ]);
+
+    if (roomsResult.status === 'fulfilled') {
+      setRooms(roomsResult.value.data.rooms || []);
+    } else {
+      showToast('ไม่สามารถโหลดข้อมูลห้องประชุมได้', 'error');
     }
+
+    if (bookingsResult.status === 'fulfilled') {
+      setAllBookings(bookingsResult.value.data.bookings || []);
+    } else {
+      setAllBookings([]);
+      showToast('ไม่สามารถโหลดข้อมูลการจองได้', 'error');
+    }
+
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);

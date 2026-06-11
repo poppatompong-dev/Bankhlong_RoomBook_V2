@@ -1,11 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSocket } from '../../contexts/SocketContext';
+import SystemStatusBadge from './SystemStatusBadge';
 import logo from '../../assets/logo.png';
 
 export default function Header() {
   const { user, logout, isAdmin } = useAuth();
-  const { connected } = useSocket();
   const location = useLocation();
 
   const NAV_ITEMS = [
@@ -24,7 +23,7 @@ export default function Header() {
         <Link to="/" className="flex items-center gap-3 no-underline text-white hover:text-white">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center p-1"
             style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)' }}>
-            <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={logo} alt="โลโก้เทศบาลตำบลบ้านคลอง" width="40" height="40" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div>
             <div className="font-prompt text-lg font-semibold leading-tight">เทศบาลตำบลบ้านคลอง</div>
@@ -50,10 +49,7 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-300 animate-pulse' : 'bg-red-400'}`}></div>
-            <span className="text-xs opacity-85">{connected ? 'Live' : 'Offline'}</span>
-          </div>
+          <SystemStatusBadge />
           {user ? (
             <>
               <div className="hidden sm:flex items-center gap-2">

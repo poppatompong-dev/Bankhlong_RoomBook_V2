@@ -1,11 +1,12 @@
 /**
  * Minimal auth routes for the React client.
- * Uses an in-memory user list in Sheets mode.
+ * Uses configured database users first, then local env fallback admins.
  */
 
 const express = require('express');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const postgresDb = require('../services/postgresDb');
 const supabaseDb = require('../services/supabaseDb');
 
 const router = express.Router();
@@ -68,6 +69,12 @@ async function passwordMatches(password, storedHash) {
   }
 }
 
+function userStore() {
+  if (postgresDb.isEnabled()) return postgresDb;
+  if (supabaseDb.isEnabled()) return supabaseDb;
+  return null;
+}
+
 router.post('/login', async (req, res) => {
   const { login, username, password } = req.body;
   const loginVal = (login || username || '').trim().toLowerCase();
@@ -78,9 +85,10 @@ router.post('/login', async (req, res) => {
 
   let user = null;
 
-  if (supabaseDb.isEnabled()) {
+  const store = userStore();
+  if (store) {
     try {
-      const adminUser = await supabaseDb.getAdminUserByLogin(loginVal);
+      const adminUser = await store.getAdminUserByLogin(loginVal);
       if (adminUser && await passwordMatches(password, adminUser.password_hash)) {
         user = {
           id: adminUser.id,
@@ -91,7 +99,7 @@ router.post('/login', async (req, res) => {
         };
       }
     } catch (err) {
-      console.error('Supabase admin login failed:', err.message);
+      console.error('Database admin login failed:', err.message);
     }
   }
 
@@ -131,12 +139,13 @@ router.get('/me', async (req, res) => {
   }
 
   let user = USERS.find((candidate) => candidate.id === data.id);
-  if (!user && supabaseDb.isEnabled()) {
+  const store = userStore();
+  if (!user && store) {
     try {
-      const users = await supabaseDb.getAdminUsers();
+      const users = await store.getAdminUsers();
       user = users.find((candidate) => candidate.id === data.id);
     } catch (err) {
-      console.error('Supabase admin profile lookup failed:', err.message);
+      console.error('Database admin profile lookup failed:', err.message);
     }
   }
   if (!user) {

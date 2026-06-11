@@ -147,7 +147,7 @@
         "type": "pill_grid",
         "slot_interval": "30min",
         "range": "07:00–20:00",
-        "max_duration": "4h",
+        "max_duration": "no fixed limit within same day",
         "booked_style": { "opacity": 0.3, "cursor": "not-allowed" },
         "selected_style": { "bg": "#14b8a6", "text": "#ffffff" }
       }
@@ -305,7 +305,7 @@
   },
 
   "business_rules": {
-    "max_booking_duration_hours": 4,
+    "max_booking_duration_hours": null,
     "prevent_double_booking": true,
     "overlap_check": "same roomId + overlapping startTime/endTime",
     "time_slot_interval_minutes": 30,

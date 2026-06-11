@@ -1,20 +1,107 @@
 import { useState, useEffect } from 'react';
-import { roomsAPI } from '../services/api';
+import { healthAPI, roomsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const GCAL_ID = 'cvq6279kfec56nnmsa90sq16vc@group.calendar.google.com';
-const GCAL_EMBED = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(GCAL_ID)}&ctz=Asia%2FBangkok&hl=th&mode=WEEK&showTitle=0&showNav=1&showPrint=0&showTabs=1&showCalendars=0`;
+
+const DATABASE_STATUS = {
+  postgres: {
+    icon: '🐘',
+    title: 'Neon Postgres',
+    desc: 'ฐานข้อมูลหลักสำหรับห้องประชุม ผู้ใช้ และรายการจอง',
+    badge: 'เชื่อมต่อแล้ว',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    badgeBg: '#dcfce7',
+    badgeText: '#166534'
+  },
+  'google-sheets': {
+    icon: '📊',
+    title: 'Google Sheets',
+    desc: 'กำลังใช้ Google Sheets เป็นฐานข้อมูลหลัก',
+    badge: 'เชื่อมต่อแล้ว',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    badgeBg: '#dbeafe',
+    badgeText: '#1e40af'
+  },
+  mock: {
+    icon: '🧪',
+    title: 'Mock Database',
+    desc: 'โหมดทดสอบ ข้อมูลอาจไม่ถาวร',
+    badge: 'โหมดทดสอบ',
+    bg: '#fff7ed',
+    border: '#fed7aa',
+    badgeBg: '#ffedd5',
+    badgeText: '#9a3412'
+  },
+  unconfigured: {
+    icon: '⚠️',
+    title: 'ยังไม่ได้เชื่อมต่อฐานข้อมูล',
+    desc: 'ตรวจสอบ DATABASE_URL หรือค่าตั้งค่า production',
+    badge: 'ต้องตรวจสอบ',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    badgeBg: '#fee2e2',
+    badgeText: '#991b1b'
+  },
+  unknown: {
+    icon: '🔎',
+    title: 'กำลังตรวจสอบฐานข้อมูล',
+    desc: 'รอสถานะจาก API health',
+    badge: 'กำลังโหลด',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    badgeBg: '#f1f5f9',
+    badgeText: '#475569'
+  }
+};
+
+function formatThaiDateTime(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return new Intl.DateTimeFormat('th-TH', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Bangkok'
+  }).format(date);
+}
 
 export default function Settings() {
   const [rooms, setRooms] = useState([]);
   const [calMode, setCalMode] = useState('WEEK');
+  const [health, setHealth] = useState(null);
+  const [statusError, setStatusError] = useState('');
   const { user } = useAuth();
 
   useEffect(() => {
-    roomsAPI.list().then(res => setRooms(res.data.rooms || [])).catch(() => {});
+    let isMounted = true;
+
+    Promise.allSettled([roomsAPI.list(), healthAPI.get()]).then(([roomsResult, healthResult]) => {
+      if (!isMounted) return;
+
+      if (roomsResult.status === 'fulfilled') {
+        setRooms(roomsResult.value.data.rooms || []);
+      }
+
+      if (healthResult.status === 'fulfilled') {
+        setHealth(healthResult.value.data || null);
+        setStatusError('');
+      } else {
+        setStatusError('ไม่สามารถอ่านสถานะระบบจาก /api/health ได้');
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const embedUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(GCAL_ID)}&ctz=Asia%2FBangkok&hl=th&mode=${calMode}&showTitle=0&showNav=1&showPrint=0&showTabs=1&showCalendars=0`;
+  const databaseKey = health?.database || (statusError ? 'unconfigured' : 'unknown');
+  const databaseStatus = DATABASE_STATUS[databaseKey] || DATABASE_STATUS.unknown;
+  const activeRooms = rooms.filter(room => room.isActive !== false && room.is_active !== false);
 
   return (
     <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 animate-fade-in">
@@ -76,42 +163,58 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* GCal Status */}
+        {/* Connection Status */}
         <div className="card">
           <div className="card-header"><div className="card-title">🔌 สถานะการเชื่อมต่อ</div></div>
           <div className="card-body">
-            <div className="p-4 rounded-xl mb-3" style={{ border: '1.5px solid #e2e8f0' }}>
+            <div className="p-4 rounded-xl mb-3" style={{ border: `1.5px solid ${databaseStatus.border}`, background: databaseStatus.bg }}>
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ background: '#f0fdf4' }}>📅</div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ background: 'rgba(255,255,255,0.72)' }}>{databaseStatus.icon}</div>
                 <div className="flex-1">
-                  <div className="text-sm font-semibold">Google Calendar</div>
-                  <div className="text-xs text-gray-400 mt-0.5">Calendar ID: &nbsp;
-                    <code className="text-xs bg-gray-100 px-1 py-0.5 rounded" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                      {GCAL_ID}
-                    </code>
-                  </div>
+                  <div className="text-sm font-semibold text-gray-800">{databaseStatus.title}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{databaseStatus.desc}</div>
+                </div>
+                <span className="text-xs px-2.5 py-1 rounded-full font-semibold" style={{ background: databaseStatus.badgeBg, color: databaseStatus.badgeText }}>
+                  {health?.ok === false ? 'มีปัญหา' : databaseStatus.badge}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <div className="text-gray-400 font-semibold">โหมดฐานข้อมูล</div>
+                  <div className="text-gray-700 font-mono mt-1">{health?.database || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-400 font-semibold">สถานะ API</div>
+                  <div className="text-gray-700 mt-1">{health?.status || (statusError ? 'error' : 'loading')}</div>
+                </div>
+                <div>
+                  <div className="text-gray-400 font-semibold">รายการจองในระบบ</div>
+                  <div className="text-gray-700 mt-1">{typeof health?.cachedBookings === 'number' ? `${health.cachedBookings} รายการ` : '-'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-400 font-semibold">ตรวจล่าสุด</div>
+                  <div className="text-gray-700 mt-1">{formatThaiDateTime(health?.timestamp)}</div>
                 </div>
               </div>
-              <div className="p-3 rounded-lg text-xs" style={{ background: '#fef9ec', border: '1px solid #fde68a', fontFamily: 'Sarabun' }}>
-                <div className="font-semibold text-amber-800 mb-1">⚠️ อยู่ในโหมดจำลอง (Simulated)</div>
-                <div className="text-amber-700">เพื่อให้ระบบสร้าง event จริงบน Google Calendar ต้องเพิ่ม Service Account:</div>
-                <ol className="list-decimal pl-4 mt-2 space-y-1 text-amber-700">
-                  <li>ไปที่ <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-blue-600 underline">Google Cloud Console</a> → สร้าง Project</li>
-                  <li>เปิดใช้งาน Google Calendar API</li>
-                  <li>สร้าง Service Account → สร้าง Key (JSON)</li>
-                  <li>Share Calendar ให้ Service Account email → สิทธิ์ "จัดการกิจกรรม"</li>
-                  <li>วาง JSON ใน <code className="bg-amber-100 px-1 rounded">server/.env</code> → <code className="bg-amber-100 px-1 rounded">GOOGLE_SERVICE_ACCOUNT_JSON=...</code></li>
-                </ol>
-              </div>
+              {statusError && (
+                <div className="mt-3 text-xs font-semibold text-red-700">{statusError}</div>
+              )}
             </div>
 
-            {/* MongoDB */}
-            <div className="flex items-center gap-3 p-4 rounded-xl" style={{ border: '1.5px solid #e2e8f0' }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ background: '#f0fdf4' }}>🍃</div>
-              <div>
-                <div className="text-sm font-semibold">MongoDB Atlas</div>
-                <div className="text-xs text-gray-400">Bankhlong_RoomBook_V2</div>
-                <span className="badge badge-success mt-1">เชื่อมต่อแล้ว</span>
+            <div className="p-4 rounded-xl" style={{ border: '1.5px solid #e2e8f0', background: '#ffffff' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ background: '#eff6ff' }}>📅</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-gray-800">Google Calendar (แสดงผล)</div>
+                  <div className="text-xs text-gray-400 mt-0.5">ฝังปฏิทินสำหรับดูตารางประกอบ ไม่ใช่ฐานข้อมูลหลัก</div>
+                </div>
+                <span className="text-xs px-2.5 py-1 rounded-full font-semibold" style={{ background: '#dbeafe', color: '#1e40af' }}>เปิดใช้งาน</span>
+              </div>
+              <div className="mt-3 text-xs text-gray-500">
+                Calendar ID:&nbsp;
+                <code className="text-xs bg-gray-100 px-1 py-0.5 rounded" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {GCAL_ID}
+                </code>
               </div>
             </div>
           </div>
@@ -123,7 +226,9 @@ export default function Settings() {
           <div className="card-body">
             {[
               { method: 'POST', path: '/api/auth/login', desc: 'เข้าสู่ระบบ', color: '#d1fae5', textColor: '#065f46' },
+              { method: 'GET', path: '/api/health', desc: 'ตรวจสถานะระบบและฐานข้อมูล', color: '#dbeafe', textColor: '#1e40af' },
               { method: 'GET', path: '/api/rooms', desc: 'ดึงรายชื่อห้อง', color: '#dbeafe', textColor: '#1e40af' },
+              { method: 'POST', path: '/api/rooms', desc: 'เพิ่มห้องประชุม (Admin)', color: '#d1fae5', textColor: '#065f46' },
               { method: 'GET', path: '/api/bookings', desc: 'ดึงรายการจอง', color: '#dbeafe', textColor: '#1e40af' },
               { method: 'POST', path: '/api/bookings', desc: 'สร้างการจองใหม่ (อนุมัติทันที)', color: '#d1fae5', textColor: '#065f46' },
               { method: 'PUT', path: '/api/bookings/:id', desc: 'ยกเลิกการจอง (Admin)', color: '#fef3c7', textColor: '#92400e' },
@@ -142,9 +247,9 @@ export default function Settings() {
 
         {/* Rooms list */}
         <div className="card">
-          <div className="card-header"><div className="card-title">🏢 ห้องประชุมในระบบ ({rooms.length} ห้อง)</div></div>
+          <div className="card-header"><div className="card-title">🏢 ห้องประชุมในระบบ ({activeRooms.length} ห้อง)</div></div>
           <div className="card-body">
-            {rooms.map(r => (
+            {activeRooms.map(r => (
               <div key={r._id || r.id || r.name} className="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-b-0">
                 <span className="text-xl">{r.icon}</span>
                 <div className="flex-1">
