@@ -42,12 +42,29 @@ function visibleLayouts(layouts, includeInactive) {
     .sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label));
 }
 
+function isMissingRoomLayoutsTable(err) {
+  return /relation "?room_layouts"? does not exist/i.test(err?.message || '');
+}
+
+async function loadLayouts(store, includeInactive) {
+  try {
+    const layouts = store ? await store.getRoomLayouts() : LAYOUTS;
+    return visibleLayouts(layouts, includeInactive);
+  } catch (err) {
+    if (store?.ensureRoomLayoutsSchema && isMissingRoomLayoutsTable(err)) {
+      await store.ensureRoomLayoutsSchema();
+      return visibleLayouts(await store.getRoomLayouts(), includeInactive);
+    }
+    throw err;
+  }
+}
+
 router.get('/', async (req, res) => {
   try {
     const includeInactive = req.query.includeInactive === 'true';
     const store = layoutStore();
-    const layouts = store ? await store.getRoomLayouts() : LAYOUTS;
-    res.json({ ok: true, layouts: visibleLayouts(layouts, includeInactive) });
+    const layouts = await loadLayouts(store, includeInactive);
+    res.json({ ok: true, layouts });
   } catch (err) {
     console.error('Room layouts lookup failed:', err.message);
     res.json({
@@ -71,7 +88,7 @@ router.post('/', async (req, res) => {
       sortOrder: req.body.sortOrder ?? 0,
       isActive: req.body.isActive !== false
     });
-    const layouts = store ? await store.getRoomLayouts() : LAYOUTS;
+    const layouts = await loadLayouts(store, true);
     if (layouts.some(item => item.id === layout.id || item._id === layout.id)) {
       return res.status(409).json({ ok: false, message: 'รหัสรูปแบบนี้มีอยู่แล้ว' });
     }

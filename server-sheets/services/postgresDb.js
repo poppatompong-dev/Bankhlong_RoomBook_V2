@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const { DEFAULT_ROOM_LAYOUTS } = require('./defaultRoomLayouts');
 
 const ROOM_COLUMNS = 'id,name,capacity,icon,floor,location,is_active,created_at,updated_at';
 const BOOKING_COLUMNS = 'id,name,phone,dept,room,booking_date,start_time,end_time,purpose,status,activity,attendees,equipment,additional_services,metadata,created_at,updated_at';
@@ -398,6 +399,32 @@ async function deleteRoomLayout(id) {
   return true;
 }
 
+async function ensureRoomLayoutsSchema() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS room_layouts (
+      id text primary key,
+      label text not null,
+      icon text not null default '▦',
+      sort_order integer not null default 0,
+      is_active boolean not null default true,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `);
+  await query('CREATE INDEX IF NOT EXISTS room_layouts_active_sort_idx ON room_layouts (is_active, sort_order)');
+
+  for (const layout of DEFAULT_ROOM_LAYOUTS) {
+    const value = fromRoomLayout(layout);
+    await query(
+      `INSERT INTO room_layouts (id, label, icon, sort_order, is_active)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (id) DO NOTHING`,
+      [value.id, value.label, value.icon, value.sort_order, value.is_active]
+    );
+  }
+  return true;
+}
+
 module.exports = {
   isEnabled,
   getPool,
@@ -418,5 +445,6 @@ module.exports = {
   getRoomLayouts,
   createRoomLayout,
   updateRoomLayout,
-  deleteRoomLayout
+  deleteRoomLayout,
+  ensureRoomLayoutsSchema
 };

@@ -85,3 +85,29 @@ test('room layout route creates, updates, lists, and deletes through postgres ad
     assert.equal(layouts.length, 0);
   });
 });
+
+test('room layout route initializes postgres schema when the table is missing', async () => {
+  const layouts = [];
+  let initialized = false;
+  const router = loadRoomLayoutsRouterWithPostgres({
+    isEnabled: () => true,
+    getRoomLayouts: async () => {
+      if (!initialized) throw new Error('relation "room_layouts" does not exist');
+      return layouts;
+    },
+    ensureRoomLayoutsSchema: async () => {
+      initialized = true;
+      layouts.push({ id: 'classroom', _id: 'classroom', label: 'ห้องเรียน (Classroom)', icon: '🎓', sortOrder: 10, isActive: true });
+    }
+  });
+
+  await withServer(router, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/room-layouts`);
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.ok, true);
+    assert.equal(body.layouts.length, 1);
+    assert.equal(body.layouts[0].id, 'classroom');
+  });
+});
