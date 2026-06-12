@@ -1,8 +1,10 @@
 const { Pool } = require('pg');
+const { DEFAULT_ROOM_LAYOUTS } = require('./defaultRoomLayouts');
 
 const ROOM_COLUMNS = 'id,name,capacity,icon,floor,location,is_active,created_at,updated_at';
 const BOOKING_COLUMNS = 'id,name,phone,dept,room,booking_date,start_time,end_time,purpose,status,activity,attendees,equipment,additional_services,metadata,created_at,updated_at';
 const ADMIN_USER_COLUMNS = 'id,username,name,role,password_hash,created_at,updated_at';
+const ROOM_LAYOUT_COLUMNS = 'id,label,icon,sort_order,is_active,created_at,updated_at';
 
 let pool = null;
 
@@ -172,6 +174,38 @@ function toAdminUser(row, includePasswordHash = false) {
   };
 }
 
+function toRoomLayout(row) {
+  return {
+    id: row.id,
+    _id: row.id,
+    label: row.label,
+    icon: row.icon || '▦',
+    sortOrder: row.sort_order || 0,
+    isActive: row.is_active !== false,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function fromRoomLayout(layout) {
+  return {
+    id: layout.id,
+    label: String(layout.label || '').trim(),
+    icon: layout.icon || '▦',
+    sort_order: Number(layout.sortOrder) || 0,
+    is_active: layout.isActive !== false
+  };
+}
+
+function mapRoomLayoutFields(fields) {
+  const mapped = {};
+  if (fields.label !== undefined) mapped.label = String(fields.label).trim();
+  if (fields.icon !== undefined) mapped.icon = fields.icon || '▦';
+  if (fields.sortOrder !== undefined) mapped.sort_order = Number(fields.sortOrder) || 0;
+  if (fields.isActive !== undefined) mapped.is_active = fields.isActive !== false;
+  return mapped;
+}
+
 function fromAdminUser(user) {
   return {
     id: user.id || `u${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
@@ -338,6 +372,59 @@ async function deleteAdminUser(id) {
   return true;
 }
 
+async function getRoomLayouts() {
+  const { rows } = await query(`SELECT ${ROOM_LAYOUT_COLUMNS} FROM room_layouts ORDER BY sort_order ASC, label ASC`);
+  return rows.map(toRoomLayout);
+}
+
+async function createRoomLayout(layout) {
+  const value = fromRoomLayout(layout);
+  const { rows } = await query(
+    `INSERT INTO room_layouts (id, label, icon, sort_order, is_active)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING ${ROOM_LAYOUT_COLUMNS}`,
+    [value.id, value.label, value.icon, value.sort_order, value.is_active]
+  );
+  return toRoomLayout(rows[0]);
+}
+
+async function updateRoomLayout(id, fields) {
+  const { rows } = await buildUpdate('room_layouts', id, mapRoomLayoutFields(fields), ROOM_LAYOUT_COLUMNS);
+  if (!rows[0]) throw new Error('ไม่พบรูปแบบการจัดห้อง');
+  return toRoomLayout(rows[0]);
+}
+
+async function deleteRoomLayout(id) {
+  await query('DELETE FROM room_layouts WHERE id = $1', [id]);
+  return true;
+}
+
+async function ensureRoomLayoutsSchema() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS room_layouts (
+      id text primary key,
+      label text not null,
+      icon text not null default '▦',
+      sort_order integer not null default 0,
+      is_active boolean not null default true,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `);
+  await query('CREATE INDEX IF NOT EXISTS room_layouts_active_sort_idx ON room_layouts (is_active, sort_order)');
+
+  for (const layout of DEFAULT_ROOM_LAYOUTS) {
+    const value = fromRoomLayout(layout);
+    await query(
+      `INSERT INTO room_layouts (id, label, icon, sort_order, is_active)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (id) DO NOTHING`,
+      [value.id, value.label, value.icon, value.sort_order, value.is_active]
+    );
+  }
+  return true;
+}
+
 module.exports = {
   isEnabled,
   getPool,
@@ -354,5 +441,10 @@ module.exports = {
   getAdminUserByLogin,
   createAdminUser,
   updateAdminUser,
-  deleteAdminUser
+  deleteAdminUser,
+  getRoomLayouts,
+  createRoomLayout,
+  updateRoomLayout,
+  deleteRoomLayout,
+  ensureRoomLayoutsSchema
 };

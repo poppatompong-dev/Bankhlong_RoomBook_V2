@@ -1,14 +1,7 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { TIME_SLOTS, formatDateTH, timeDiff } from '../../utils/helpers';
-
-const LAYOUTS = [
-  { value: 'classroom', label: '🎓 ห้องเรียน (Classroom)' },
-  { value: 'conference', label: '🪑 ประชุมกลุ่ม (Conference)' },
-  { value: 'ushape', label: '🔵 ยู-เชฟ (U-Shape)' },
-  { value: 'theater', label: '🎭 เธียเตอร์ (Theater)' },
-  { value: 'banquet', label: '🍽️ แบงควิต (Banquet)' },
-  { value: 'other', label: '📐 อื่นๆ (ระบุ)' },
-];
+import { roomLayoutsAPI } from '../../services/api';
+import { DEFAULT_ROOM_LAYOUTS, formatRoomLayout, normalizeRoomLayouts } from '../../utils/roomLayouts';
 const DRESS_CODES = ['', 'ชุดสุภาพ', 'ชุดข้าราชการ / เครื่องแบบ', 'ชุดลำลอง', 'ชุดฟอร์มหน่วยงาน', 'อื่นๆ'];
 const EQUIP_LIST = [
   { key: 'sound', label: '🔊 ระบบเครื่องเสียง' },
@@ -86,11 +79,24 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState([]);
+  const [layouts, setLayouts] = useState(DEFAULT_ROOM_LAYOUTS);
   const fileRef = useRef(null);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const setEq = (k, v) => setForm(p => ({ ...p, equipment: { ...p.equipment, [k]: v } }));
   const setSvc = (k, v) => setForm(p => ({ ...p, additionalServices: { ...p.additionalServices, [k]: v } }));
+
+  useEffect(() => {
+    let alive = true;
+    roomLayoutsAPI.list()
+      .then(res => {
+        if (alive) setLayouts(normalizeRoomLayouts(res.data.layouts));
+      })
+      .catch(() => {
+        if (alive) setLayouts(DEFAULT_ROOM_LAYOUTS);
+      });
+    return () => { alive = false; };
+  }, []);
 
   const bookedSlots = useMemo(() => {
     const s = new Set();
@@ -279,8 +285,8 @@ export default function BookingFormSheets({ rooms, selectedDate, selectedRoom, b
               <div>
                 <LBL>รูปแบบการจัดห้อง</LBL>
                 <div className="flex flex-wrap gap-2">
-                  {LAYOUTS.map(l => (
-                    <Chip key={l.value} checked={form.roomLayout === l.value} onClick={() => set('roomLayout', form.roomLayout === l.value ? '' : l.value)}>{l.label}</Chip>
+                  {normalizeRoomLayouts(layouts).map(l => (
+                    <Chip key={l.id} checked={form.roomLayout === l.id} onClick={() => set('roomLayout', form.roomLayout === l.id ? '' : l.id)}>{formatRoomLayout(l)}</Chip>
                   ))}
                 </div>
               </div>

@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { bookingsAPI, roomsAPI, usersAPI } from '../services/api';
+import { bookingsAPI, roomLayoutsAPI, roomsAPI, usersAPI } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useSocket } from '../contexts/SocketContext';
 import { formatDateTH, getStatusBadge } from '../utils/helpers';
+import { formatRoomLayout, normalizeRoomLayouts } from '../utils/roomLayouts';
 // --- Modals ---
 
 function ConfirmModal({ options, onClose }) {
@@ -35,10 +36,11 @@ function ConfirmModal({ options, onClose }) {
   );
 }
 
-function ViewBookingModal({ booking, onClose }) {
+function ViewBookingModal({ booking, roomLayouts = [], onClose }) {
   const userName = booking.name || booking.userId?.name || 'ไม่ระบุ';
   const roomName = booking.room || booking.roomId?.name || booking.roomId;
   const roomIcon = booking.roomIcon || '🏢';
+  const layout = normalizeRoomLayouts(roomLayouts).find(item => item.id === booking.roomLayout || item.label === booking.roomLayout);
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center px-4 animate-fade-in" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
       onMouseDown={e => e.target === e.currentTarget && onClose()}>
@@ -56,7 +58,7 @@ function ViewBookingModal({ booking, onClose }) {
             <div><span className="text-gray-500 font-semibold block mb-1">วันที่</span>{formatDateTH(booking.date)}</div>
             <div><span className="text-gray-500 font-semibold block mb-1">เวลา</span>{booking.startTime} - {booking.endTime} น.</div>
             <div className="col-span-2"><span className="text-gray-500 font-semibold block mb-1">วัตถุประสงค์</span>{booking.purpose}</div>
-            <div className="col-span-2"><span className="text-gray-500 font-semibold block mb-1">รูปแบบการจัดห้อง</span>{booking.roomLayout || '-'}</div>
+            <div className="col-span-2"><span className="text-gray-500 font-semibold block mb-1">รูปแบบการจัดห้อง</span>{layout ? formatRoomLayout(layout) : (booking.roomLayout || '-')}</div>
           </div>
           <div className="border-t pt-4">
             <h3 className="font-semibold text-teal-600 mb-2">บริการ/อุปกรณ์</h3>
@@ -154,6 +156,77 @@ function RoomModal({ room, onSave, onClose, showToast }) {
   );
 }
 
+function RoomLayoutModal({ layout, onSave, onClose, showToast }) {
+  const isEdit = !!layout;
+  const [form, setForm] = useState(layout ? {
+    label: layout.label || '',
+    icon: layout.icon || '▦',
+    sortOrder: layout.sortOrder ?? 0,
+    isActive: layout.isActive !== false
+  } : {
+    label: '',
+    icon: '▦',
+    sortOrder: 0,
+    isActive: true
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      if (isEdit) {
+        await roomLayoutsAPI.update(layout._id || layout.id, form);
+        showToast('แก้ไขรูปแบบการจัดห้องสำเร็จ', 'success');
+      } else {
+        await roomLayoutsAPI.create(form);
+        showToast('เพิ่มรูปแบบการจัดห้องสำเร็จ', 'success');
+      }
+      onSave();
+    } catch {
+      showToast('เกิดข้อผิดพลาดในการบันทึกรูปแบบการจัดห้อง', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center px-4 animate-fade-in" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+      onMouseDown={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
+        <div className={`p-5 flex justify-between items-center text-white ${isEdit ? 'bg-blue-600' : 'bg-teal-600'}`}>
+          <h2 className="font-prompt text-lg font-bold">{isEdit ? '✏️ แก้ไขรูปแบบการจัดห้อง' : '➕ เพิ่มรูปแบบการจัดห้อง'}</h2>
+          <button type="button" aria-label="ปิดฟอร์มรูปแบบการจัดห้อง" onClick={onClose} className="text-white/80 hover:text-white text-xl border-none bg-transparent cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded">&times;</button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="mb-4">
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase">ชื่อรูปแบบ</label>
+            <input className="form-control" placeholder="เช่น จัดโต๊ะกลุ่มย่อย" value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} required />
+          </div>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase">ไอคอน</label>
+              <input className="form-control" value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })} maxLength={4} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase">ลำดับ</label>
+              <input type="number" className="form-control" value={form.sortOrder} onChange={e => setForm({ ...form, sortOrder: e.target.value })} />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-gray-700 mb-6 cursor-pointer" style={{ fontFamily: 'Sarabun' }}>
+            <input type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive: e.target.checked })} />
+            เปิดใช้งานในฟอร์มจอง
+          </label>
+          <div className="flex gap-3">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1">ยกเลิก</button>
+            <button type="submit" disabled={saving} className="btn-primary flex-1">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function UserModal({ user, onSave, onClose, showToast }) {
   const isEdit = !!user;
   const [form, setForm] = useState(user ? { name: user.name || '', username: user.username || '', phone: user.phone || '', password: '', role: user.role || 'user' } : { name: '', username: '', phone: '', password: '', role: 'user' });
@@ -233,6 +306,7 @@ export default function Admin() {
   const [bookings, setBookings] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [users, setUsers] = useState([]);
+  const [roomLayouts, setRoomLayouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const { socket } = useSocket();
@@ -242,8 +316,10 @@ export default function Admin() {
   const [viewBooking, setViewBooking] = useState(null);
   const [editRoom, setEditRoom] = useState(null);
   const [editUser, setEditUser] = useState(null);
+  const [editLayout, setEditLayout] = useState(null);
   const [showAddRoom, setShowAddRoom] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [showAddLayout, setShowAddLayout] = useState(false);
 
   // Booking search/filter
   const [bookingSearch, setBookingSearch] = useState('');
@@ -251,10 +327,11 @@ export default function Admin() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [bookingsResult, roomsResult, usersResult] = await Promise.allSettled([
+    const [bookingsResult, roomsResult, usersResult, layoutsResult] = await Promise.allSettled([
       bookingsAPI.list({ limit: 500 }),
       roomsAPI.list(),
-      usersAPI.list()
+      usersAPI.list(),
+      roomLayoutsAPI.list({ includeInactive: true })
     ]);
 
     if (bookingsResult.status === 'fulfilled') {
@@ -275,6 +352,13 @@ export default function Admin() {
     } else {
       setUsers([]);
       showToast('ไม่สามารถโหลดข้อมูลผู้ใช้ได้', 'error');
+    }
+
+    if (layoutsResult.status === 'fulfilled') {
+      setRoomLayouts(normalizeRoomLayouts(layoutsResult.value.data.layouts || []));
+    } else {
+      setRoomLayouts([]);
+      showToast('ไม่สามารถโหลดรูปแบบการจัดห้องได้', 'error');
     }
 
     setLoading(false);
@@ -374,6 +458,23 @@ export default function Admin() {
     });
   };
 
+  const handleDeleteLayout = (layout) => {
+    setConfirmDialog({
+      title: '⚠️ ยืนยันการลบรูปแบบการจัดห้อง',
+      message: `คุณต้องการลบ "${formatRoomLayout(layout)}" ใช่หรือไม่?\nรายการนี้จะหายจากตัวเลือกในฟอร์มจอง`,
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          await roomLayoutsAPI.delete(layout._id || layout.id);
+          showToast('ลบรูปแบบการจัดห้องสำเร็จ', 'success');
+          fetchData();
+        } catch {
+          showToast('ไม่สามารถลบรูปแบบการจัดห้องได้', 'error');
+        }
+      }
+    });
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center py-20">
       <div className="loader border-teal-500 border-t-white" style={{width: 32, height: 32, borderWidth: 3}}></div>
@@ -384,8 +485,9 @@ export default function Admin() {
     <main className="max-w-[1400px] mx-auto px-6 py-6 animate-fade-in font-sarabun">
       {/* Modals */}
       <ConfirmModal options={confirmDialog} onClose={() => setConfirmDialog(null)} />
-      {viewBooking && <ViewBookingModal booking={viewBooking} rooms={rooms} onClose={() => setViewBooking(null)} />}
+      {viewBooking && <ViewBookingModal booking={viewBooking} roomLayouts={roomLayouts} rooms={rooms} onClose={() => setViewBooking(null)} />}
       {(showAddRoom || editRoom) && <RoomModal room={editRoom} showToast={showToast} onSave={() => { setShowAddRoom(false); setEditRoom(null); fetchData(); }} onClose={() => { setShowAddRoom(false); setEditRoom(null); }} />}
+      {(showAddLayout || editLayout) && <RoomLayoutModal layout={editLayout} showToast={showToast} onSave={() => { setShowAddLayout(false); setEditLayout(null); fetchData(); }} onClose={() => { setShowAddLayout(false); setEditLayout(null); }} />}
       {(showAddUser || editUser) && <UserModal user={editUser} showToast={showToast} onSave={() => { setShowAddUser(false); setEditUser(null); fetchData(); }} onClose={() => { setShowAddUser(false); setEditUser(null); }} />}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -400,6 +502,7 @@ export default function Admin() {
         {[
           { id: 'bookings', icon: '📋', label: 'การจองห้อง' },
           { id: 'rooms', icon: '🏢', label: 'ห้องประชุม' },
+          { id: 'layouts', icon: '🪑', label: 'รูปแบบห้อง' },
           { id: 'users', icon: '👥', label: 'ผู้ใช้งาน' },
         ].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -539,6 +642,58 @@ export default function Admin() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Room Layouts */}
+        {activeTab === 'layouts' && (
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <h2 className="font-prompt text-lg font-bold text-gray-800">รูปแบบการจัดห้อง</h2>
+                <p className="text-sm text-gray-500">เพิ่ม แก้ไข ลบ และปิดใช้งานตัวเลือกที่แสดงในฟอร์มจอง</p>
+              </div>
+              <button onClick={() => setShowAddLayout(true)} className="btn-primary btn-sm">➕ เพิ่มรูปแบบ</button>
+            </div>
+            {roomLayouts.length === 0 ? (
+              <div className="text-center py-10 text-gray-400">ยังไม่มีรูปแบบการจัดห้อง</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                      <th className="p-3 font-semibold rounded-tl-lg">รูปแบบ</th>
+                      <th className="p-3 font-semibold">รหัส</th>
+                      <th className="p-3 font-semibold">ลำดับ</th>
+                      <th className="p-3 font-semibold">สถานะ</th>
+                      <th className="p-3 font-semibold text-center rounded-tr-lg">จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {roomLayouts.map(layout => (
+                      <tr key={layout._id || layout.id} className="border-b border-gray-100 hover:bg-teal-50/30 transition-colors">
+                        <td className="p-3">
+                          <div className="font-semibold text-sm text-gray-800">{formatRoomLayout(layout)}</div>
+                        </td>
+                        <td className="p-3 text-xs font-mono text-gray-500">{layout.id}</td>
+                        <td className="p-3 text-sm text-gray-600">{layout.sortOrder}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${layout.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {layout.isActive ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <button onClick={() => setEditLayout(layout)} className="px-2 py-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 rounded">✏️</button>
+                            <button onClick={() => handleDeleteLayout(layout)} className="px-2 py-1 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded">🗑️</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
